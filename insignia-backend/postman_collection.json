@@ -1,0 +1,344 @@
+{
+  "info": {
+    "_postman_id": "c1f7b82e-9d2a-4a25-bfa3-0f49e0c5292a",
+    "name": "Crypto Wallet API - Stoplight Offline Assignment",
+    "description": "Collection for testing all 6 endpoints with both User tokens and Admin Bearer token authentication.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "adminUsername",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "admin123",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "aliceUsername",
+      "value": "alice",
+      "type": "string"
+    },
+    {
+      "key": "bobUsername",
+      "value": "bob",
+      "type": "string"
+    },
+    {
+      "key": "aliceToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bobToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Admin Login (Get Bearer Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Admin login status 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data).to.have.property('token');",
+              "    pm.collectionVariables.set('adminToken', data.token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["admin", "login"]
+        }
+      }
+    },
+    {
+      "name": "1. Register Alice",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data).to.have.property('token');",
+              "    pm.collectionVariables.set('aliceToken', data.token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{aliceUsername}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user",
+          "host": ["{{baseUrl}}"],
+          "path": ["user"]
+        }
+      }
+    },
+    {
+      "name": "2. Register Bob",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data).to.have.property('token');",
+              "    pm.collectionVariables.set('bobToken', data.token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{bobUsername}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user",
+          "host": ["{{baseUrl}}"],
+          "path": ["user"]
+        }
+      }
+    },
+    {
+      "name": "3. Balance Topup (Alice 100)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 204 No Content\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "{{aliceToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 100\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/topup",
+          "host": ["{{baseUrl}}"],
+          "path": ["topup"]
+        }
+      }
+    },
+    {
+      "name": "4. Balance Read (Alice initial: 100)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data.balance).to.eql(100);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "{{aliceToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/balance",
+          "host": ["{{baseUrl}}"],
+          "path": ["balance"]
+        }
+      }
+    },
+    {
+      "name": "5. Transfer (Alice to Bob 25)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 204 No Content\", function () {",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "{{aliceToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to_username\": \"{{bobUsername}}\",\n  \"amount\": 25\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/transfer",
+          "host": ["{{baseUrl}}"],
+          "path": ["transfer"]
+        }
+      }
+    },
+    {
+      "name": "6. Balance Read with Admin Bearer Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Admin reads balance with Bearer token\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.expect(data).to.have.property('balance');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/balance",
+          "host": ["{{baseUrl}}"],
+          "path": ["balance"]
+        }
+      }
+    },
+    {
+      "name": "7. Top Transactions Per User (Alice)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Alice transactions return bob with -25\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var list = pm.response.json();",
+              "    pm.expect(Array.isArray(list)).to.be.true;",
+              "    var entry = list.find(t => t.username === pm.collectionVariables.get('bobUsername'));",
+              "    pm.expect(entry).to.be.an('object');",
+              "    pm.expect(entry.amount).to.eql(-25);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "{{aliceToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/top_transactions_per_user",
+          "host": ["{{baseUrl}}"],
+          "path": ["top_transactions_per_user"]
+        }
+      }
+    },
+    {
+      "name": "8. Top Users (Using Admin Bearer Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Top users returned using Admin Bearer token\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var list = pm.response.json();",
+              "    pm.expect(Array.isArray(list)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/top_users",
+          "host": ["{{baseUrl}}"],
+          "path": ["top_users"]
+        }
+      }
+    }
+  ]
+}

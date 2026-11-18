@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  balance   Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sentTransfers     Transfer[] @relation("SentTransfers")
+  receivedTransfers Transfer[] @relation("ReceivedTransfers")
+  topups            Topup[]
+
+  @@map("users")
+}
+
+model Topup {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("topups")
+}
+
+model Transfer {
+  id          String   @id @default(uuid())
+  fromUserId  String
+  fromUser    User     @relation("SentTransfers", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId    String
+  toUser      User     @relation("ReceivedTransfers", fields: [toUserId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@map("transfers")
+}
