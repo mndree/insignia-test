@@ -91,3 +91,22 @@ export class AdminController {
     return this.adminService.transferUserBalance(id, dto);
   }
 }
+
+@ApiTags('Auth API')
+@Controller('auth')
+export class AuthLoginController {
+  constructor(private readonly adminService: AdminService) {}
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login endpoint for users and administrators' })
+  @ApiResponse({
+    status: 200,
+    description: 'User authenticated successfully',
+    type: AdminLoginResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  login(@Body() dto: AdminLoginDto): Promise<AdminLoginResponseDto> {
+    return this.adminService.login(dto);
+  }
+}

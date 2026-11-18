@@ -8,10 +8,18 @@ export class AdminProfileDto {
   username: string;
 }
 
+export class AdminUserDto {
+  @ApiProperty({ example: 'admin' })
+  username: string;
+}
+
 export class AdminLoginResponseDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', description: 'Admin JWT Bearer Token' })
   token: string;
 
   @ApiProperty({ type: AdminProfileDto })
   admin: AdminProfileDto;
+
+  @ApiProperty({ type: AdminUserDto, required: false })
+  user?: AdminUserDto;
 }

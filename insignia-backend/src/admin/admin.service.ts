@@ -112,38 +112,72 @@ export class AdminService implements OnModuleInit {
       where: { username: dto.username },
     });
 
-    if (!admin) {
-      throw new UnauthorizedException('Invalid admin credentials');
-    }
+    if (admin) {
+      const isMatch = await bcrypt.compare(dto.password, admin.password);
+      if (!isMatch) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
 
-    const isMatch = await bcrypt.compare(dto.password, admin.password);
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid admin credentials');
-    }
+      const user = await this.prisma.user.upsert({
+        where: { username: admin.username },
+        create: {
+          userCode: 'USR-0000',
+          username: admin.username,
+          fullName: 'System Administrator',
+          balance: 18150,
+          status: 'Active',
+        },
+        update: {},
+      });
 
-    const user = await this.prisma.user.upsert({
-      where: { username: admin.username },
-      create: {
+      const token = this.jwtService.sign({
+        sub: admin.id,
         username: admin.username,
-        fullName: admin.username,
-        balance: 1000,
-        status: 'Active',
-      },
-      update: {},
+        role: 'ADMIN',
+        userId: user.id,
+      });
+
+      return {
+        token,
+        admin: {
+          id: admin.id,
+          username: admin.username,
+        },
+        user: {
+          username: admin.username,
+        },
+      };
+    }
+
+    // Check if it is a regular user logging in (e.g. andre)
+    const user = await this.prisma.user.findUnique({
+      where: { username: dto.username },
     });
 
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isUserMatch = await bcrypt.compare(dto.password, user.password);
+    if (!isUserMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const token = this.jwtService.sign({
-      sub: admin.id,
-      username: admin.username,
-      role: 'ADMIN',
+      sub: user.id,
+      username: user.username,
+      role: 'USER',
       userId: user.id,
     });
 
     return {
       token,
       admin: {
-        id: admin.id,
-        username: admin.username,
+        id: user.id,
+        username: user.username,
+      },
+      user: {
+        username: user.username,
       },
     };
   }
@@ -157,21 +191,31 @@ export class AdminService implements OnModuleInit {
     const pageSize = Math.max(1, Number(query.pageSize) || 10);
     const skip = (page - 1) * pageSize;
 
-    const where: Prisma.UserWhereInput = {};
+    const where: Prisma.UserWhereInput = {
+      username: { not: 'admin' },
+    };
 
     if (query.search && query.search.trim()) {
       const term = query.search.trim();
-      where.OR = [
-        { fullName: { contains: term, mode: 'insensitive' } },
-        { username: { contains: term, mode: 'insensitive' } },
-        { email: { contains: term, mode: 'insensitive' } },
-        { userCode: { contains: term, mode: 'insensitive' } },
+      where.AND = [
+        {
+          OR: [
+            { fullName: { contains: term, mode: 'insensitive' } },
+            { username: { contains: term, mode: 'insensitive' } },
+            { email: { contains: term, mode: 'insensitive' } },
+            { userCode: { contains: term, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 
     if (query.status && query.status !== 'All statuses') {
       where.status = { equals: query.status, mode: 'insensitive' };
     }
+
+    const baseWhere: Prisma.UserWhereInput = {
+      username: { not: 'admin' },
+    };
 
     const [items, total, totalUsers, activeUsers, balanceAggregate] = await Promise.all([
       this.prisma.user.findMany({
@@ -181,9 +225,10 @@ export class AdminService implements OnModuleInit {
         orderBy: [{ userCode: 'asc' }, { createdAt: 'desc' }],
       }),
       this.prisma.user.count({ where }),
-      this.prisma.user.count(),
-      this.prisma.user.count({ where: { status: 'Active' } }),
+      this.prisma.user.count({ where: baseWhere }),
+      this.prisma.user.count({ where: { ...baseWhere, status: 'Active' } }),
       this.prisma.user.aggregate({
+        where: baseWhere,
         _sum: {
           balance: true,
         },

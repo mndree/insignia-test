@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Body,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -26,7 +27,9 @@ import {
   BalanceResponseDto,
   TransactionItemDto,
   TopUserItemDto,
+  PaginatedTransactionsResponseDto,
 } from './dto/response.dto.js';
+import { TransactionsQueryDto } from './dto/transactions-query.dto.js';
 
 @ApiTags('Wallet API')
 @ApiBearerAuth('admin-token')
@@ -122,5 +125,22 @@ export class WalletController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getTopUsers(): Promise<TopUserItemDto[]> {
     return this.walletService.getTopUsers();
+  }
+
+  @Get('transactions')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Fetch paginated transaction history with filtering and search' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated transactions list',
+    type: PaginatedTransactionsResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getTransactions(
+    @CurrentUser() user: User,
+    @Query() query: TransactionsQueryDto,
+  ): Promise<PaginatedTransactionsResponseDto> {
+    return this.walletService.getTransactions(user, query);
   }
 }

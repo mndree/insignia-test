@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AdminController } from './admin.controller.js';
+import { AdminController, AuthLoginController } from './admin.controller.js';
 import { AdminService } from './admin.service.js';
 
 @Module({
@@ -15,7 +15,7 @@ import { AdminService } from './admin.service.js';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, AuthLoginController],
   providers: [AdminService],
   exports: [AdminService],
 })

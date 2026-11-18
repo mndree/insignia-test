@@ -16,7 +16,10 @@ import {
   BalanceResponseDto,
   TransactionItemDto,
   TopUserItemDto,
+  PaginatedTransactionsResponseDto,
+  TransactionRecordDto,
 } from './dto/response.dto.js';
+import { TransactionsQueryDto } from './dto/transactions-query.dto.js';
 
 @Injectable()
 export class WalletService {
@@ -211,5 +214,121 @@ export class WalletService {
       username: userMap.get(g.fromUserId) ?? 'unknown',
       transacted_value: Number(g._sum.amount),
     }));
+  }
+
+  async getTransactions(
+    user: User,
+    query: TransactionsQueryDto,
+  ): Promise<PaginatedTransactionsResponseDto> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const pageSize = Math.max(1, Number(query.pageSize) || 10);
+    const isAdmin = user.username === 'admin';
+
+    // 1. Fetch transfers
+    const transfers = await this.prisma.transfer.findMany({
+      where: isAdmin
+        ? {}
+        : {
+            OR: [{ fromUserId: user.id }, { toUserId: user.id }],
+          },
+      include: {
+        fromUser: true,
+        toUser: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 2. Fetch topups
+    const topups = await this.prisma.topup.findMany({
+      where: isAdmin ? {} : { userId: user.id },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 3. Format unified transaction records
+    const unified: TransactionRecordDto[] = [];
+
+    for (const tx of transfers) {
+      let counterparty = '';
+      let signedAmount = 0;
+
+      if (tx.fromUserId === user.id) {
+        counterparty = tx.toUser.username;
+        signedAmount = -Number(tx.amount);
+      } else if (tx.toUserId === user.id) {
+        counterparty = tx.fromUser.username;
+        signedAmount = Number(tx.amount);
+      } else {
+        counterparty = tx.toUser.username;
+        signedAmount = -Number(tx.amount);
+      }
+
+      unified.push({
+        id: tx.transferCode || tx.id.slice(0, 8),
+        username: counterparty,
+        amount: signedAmount,
+        created_at: tx.createdAt.toISOString(),
+        description: tx.description || tx.notes || `Transfer between @${tx.fromUser.username} and @${tx.toUser.username}`,
+      });
+    }
+
+    for (const top of topups) {
+      unified.push({
+        id: top.topupCode || top.id.slice(0, 8),
+        username: 'system',
+        amount: Number(top.amount),
+        created_at: top.createdAt.toISOString(),
+        description: top.notes || 'Direct wallet balance top-up',
+      });
+    }
+
+    // Sort by created_at descending
+    unified.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // Apply filters
+    let filtered = unified;
+
+    if (query.search && query.search.trim()) {
+      const term = query.search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (tx) =>
+          tx.id.toLowerCase().includes(term) ||
+          tx.username.toLowerCase().includes(term) ||
+          (tx.description && tx.description.toLowerCase().includes(term)),
+      );
+    }
+
+    if (query.direction && query.direction !== 'all') {
+      if (query.direction === 'incoming') {
+        filtered = filtered.filter((tx) => tx.amount > 0);
+      } else if (query.direction === 'outgoing') {
+        filtered = filtered.filter((tx) => tx.amount < 0);
+      }
+    }
+
+    if (query.dateFrom) {
+      const fromTime = new Date(query.dateFrom).getTime();
+      if (!isNaN(fromTime)) {
+        filtered = filtered.filter((tx) => new Date(tx.created_at).getTime() >= fromTime);
+      }
+    }
+
+    if (query.dateTo) {
+      const toTime = new Date(query.dateTo).getTime();
+      if (!isNaN(toTime)) {
+        filtered = filtered.filter((tx) => new Date(tx.created_at).getTime() <= toTime);
+      }
+    }
+
+    const total = filtered.length;
+    const skip = (page - 1) * pageSize;
+    const items = filtered.slice(skip, skip + pageSize);
+
+    return {
+      items,
+      page,
+      pageSize,
+      total,
+    };
   }
 }
