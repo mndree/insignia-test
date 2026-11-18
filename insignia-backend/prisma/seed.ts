@@ -37,8 +37,8 @@ async function main() {
       password: adminPasswordHash,
       token: 'session-token-admin',
       balance: 18150,
-      createdAt: new Date('2026-10-01T00:00:00Z'),
-      lastLoginAt: new Date('2026-11-18T17:00:00Z'),
+      createdAt: new Date('2026-10-01T00:00:00+07:00'),
+      lastLoginAt: new Date('2026-11-18T17:00:00+07:00'),
     },
   });
 
@@ -56,8 +56,8 @@ async function main() {
       password: commonPasswordHash,
       token: 'mock-token-andre-111',
       balance: 24500,
-      createdAt: new Date('2026-11-18T09:40:00Z'),
-      lastLoginAt: new Date('2026-11-18T16:35:00Z'),
+      createdAt: new Date('2026-11-18T16:10:00+07:00'),
+      lastLoginAt: new Date('2026-11-18T16:35:00+07:00'),
     },
     {
       userCode: 'USR-0002',
@@ -71,8 +71,8 @@ async function main() {
       password: commonPasswordHash,
       token: 'mock-token-azra-222',
       balance: 18250,
-      createdAt: new Date('2026-11-17T14:15:00Z'),
-      lastLoginAt: new Date('2026-11-18T11:20:00Z'),
+      createdAt: new Date('2026-11-17T14:15:00+07:00'),
+      lastLoginAt: new Date('2026-11-18T11:20:00+07:00'),
     },
     {
       userCode: 'USR-0003',
@@ -86,8 +86,8 @@ async function main() {
       password: commonPasswordHash,
       token: 'mock-token-raka-333',
       balance: 32000,
-      createdAt: new Date('2026-11-16T11:20:00Z'),
-      lastLoginAt: new Date('2026-11-18T10:00:00Z'),
+      createdAt: new Date('2026-11-16T11:20:00+07:00'),
+      lastLoginAt: new Date('2026-11-18T10:00:00+07:00'),
     },
     {
       userCode: 'USR-0004',
@@ -101,8 +101,8 @@ async function main() {
       password: commonPasswordHash,
       token: 'mock-token-alice-444',
       balance: 12800,
-      createdAt: new Date('2026-11-15T16:05:00Z'),
-      lastLoginAt: new Date('2026-11-15T16:10:00Z'),
+      createdAt: new Date('2026-11-15T16:05:00+07:00'),
+      lastLoginAt: new Date('2026-11-15T16:10:00+07:00'),
     },
     {
       userCode: 'USR-0005',
@@ -116,8 +116,8 @@ async function main() {
       password: commonPasswordHash,
       token: 'mock-token-bob-555',
       balance: 8450,
-      createdAt: new Date('2026-11-14T13:30:00Z'),
-      lastLoginAt: new Date('2026-11-18T08:45:00Z'),
+      createdAt: new Date('2026-11-14T13:30:00+07:00'),
+      lastLoginAt: new Date('2026-11-18T08:45:00+07:00'),
     },
     {
       userCode: 'USR-0006',
@@ -131,8 +131,8 @@ async function main() {
       password: commonPasswordHash,
       token: 'mock-token-charlie-666',
       balance: 21600,
-      createdAt: new Date('2026-11-13T10:10:00Z'),
-      lastLoginAt: new Date('2026-11-17T19:30:00Z'),
+      createdAt: new Date('2026-11-13T10:10:00+07:00'),
+      lastLoginAt: new Date('2026-11-17T19:30:00+07:00'),
     },
   ];
 
@@ -211,7 +211,7 @@ async function main() {
       amount: 2500,
       notes: 'Project payment',
       description: 'Contractor settlement payout',
-      createdAt: new Date('2026-11-18T10:45:00Z'),
+      createdAt: new Date('2026-11-18T10:45:00+07:00'),
     },
     {
       transferCode: 'TXN-9020',
@@ -220,7 +220,7 @@ async function main() {
       amount: 1800,
       notes: 'Infrastructure reimbursement',
       description: 'Reimbursement for infrastructure',
-      createdAt: new Date('2026-11-17T14:20:00Z'),
+      createdAt: new Date('2026-11-17T14:20:00+07:00'),
     },
     {
       transferCode: 'TXN-9019',
@@ -229,7 +229,7 @@ async function main() {
       amount: 1200,
       notes: 'Design asset fee',
       description: 'Design asset license fee',
-      createdAt: new Date('2026-11-16T11:05:00Z'),
+      createdAt: new Date('2026-11-16T11:05:00+07:00'),
     },
     {
       transferCode: 'TXN-9015',
@@ -238,7 +238,7 @@ async function main() {
       amount: 38200,
       notes: 'Treasury reserve fund transfer',
       description: 'Treasury reserve fund transfer',
-      createdAt: new Date('2026-11-10T08:00:00Z'),
+      createdAt: new Date('2026-11-10T08:00:00+07:00'),
     },
     {
       transferCode: 'TXN-9014',
@@ -247,7 +247,7 @@ async function main() {
       amount: 11800,
       notes: 'Quarterly node validator allocation',
       description: 'Quarterly node validator allocation',
-      createdAt: new Date('2026-11-08T15:30:00Z'),
+      createdAt: new Date('2026-11-08T15:30:00+07:00'),
     },
   ];
 
@@ -265,7 +265,7 @@ async function main() {
       amount: 20000,
       notes: 'Liquidity pool seeding',
       description: 'Liquidity provision',
-      createdAt: new Date('2026-11-12T09:15:00Z'),
+      createdAt: new Date('2026-11-12T09:15:00+07:00'),
     },
   });
   await prisma.transfer.create({
@@ -276,7 +276,7 @@ async function main() {
       amount: 15000,
       notes: 'Marketing sponsorship',
       description: 'Regional community grant',
-      createdAt: new Date('2026-11-14T11:45:00Z'),
+      createdAt: new Date('2026-11-14T11:45:00+07:00'),
     },
   });
   await prisma.transfer.create({
@@ -287,7 +287,7 @@ async function main() {
       amount: 8200,
       notes: 'Validator operational lease',
       description: 'Cloud validator hosting',
-      createdAt: new Date('2026-11-15T15:20:00Z'),
+      createdAt: new Date('2026-11-15T15:20:00+07:00'),
     },
   });
 
@@ -298,7 +298,7 @@ async function main() {
       userId: adminUser.id,
       amount: 10000,
       notes: 'Initial treasury seed',
-      createdAt: new Date('2026-11-04T07:30:00Z'),
+      createdAt: new Date('2026-11-04T07:30:00+07:00'),
     },
   });
 
@@ -308,7 +308,7 @@ async function main() {
       userId: adminUser.id,
       amount: 5000,
       notes: 'Secondary operational top-up',
-      createdAt: new Date('2026-11-15T08:00:00Z'),
+      createdAt: new Date('2026-11-15T08:00:00+07:00'),
     },
   });
 
@@ -320,7 +320,7 @@ async function main() {
       amount: 750,
       notes: 'External security audit retainer',
       description: 'External security audit retainer',
-      createdAt: new Date('2026-11-14T16:30:00Z'),
+      createdAt: new Date('2026-11-14T16:30:00+07:00'),
     },
   });
 
@@ -332,7 +332,7 @@ async function main() {
       amount: 3200,
       notes: 'Treasury reserve allocation',
       description: 'Treasury reserve allocation',
-      createdAt: new Date('2026-11-13T14:15:00Z'),
+      createdAt: new Date('2026-11-13T14:15:00+07:00'),
     },
   });
 
@@ -344,7 +344,7 @@ async function main() {
       amount: 1500,
       notes: 'Escrow release credit',
       description: 'Escrow release credit',
-      createdAt: new Date('2026-11-08T12:20:00Z'),
+      createdAt: new Date('2026-11-08T12:20:00+07:00'),
     },
   });
 
@@ -356,7 +356,7 @@ async function main() {
       amount: 800,
       notes: 'API integration fee',
       description: 'API integration fee',
-      createdAt: new Date('2026-11-06T09:10:00Z'),
+      createdAt: new Date('2026-11-06T09:10:00+07:00'),
     },
   });
 

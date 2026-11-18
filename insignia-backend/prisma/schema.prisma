@@ -11,8 +11,8 @@ model Admin {
   id        String   @id @default(uuid())
   username  String   @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("admins")
 }
@@ -30,9 +30,9 @@ model User {
   password    String?
   token       String?
   balance     Decimal  @default(0) @db.Decimal(18, 2)
-  lastLoginAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
   sentTransfers     Transfer[] @relation("SentTransfers")
   receivedTransfers Transfer[] @relation("ReceivedTransfers")
@@ -48,7 +48,7 @@ model Topup {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount    Decimal  @db.Decimal(18, 2)
   notes     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([userId])
   @@map("topups")
@@ -64,8 +64,8 @@ model Transfer {
   amount       Decimal  @db.Decimal(18, 2)
   notes        String?
   description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz(3)
 
   @@index([fromUserId])
   @@index([toUserId])
