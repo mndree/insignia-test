@@ -12,6 +12,11 @@ import {
   LoginResponseDto,
   TransactionsQueryDto,
   PaginatedTransactionsResponseDto,
+  UsersQueryFilters,
+  UsersListResponseDto,
+  UserDetailsResponseDto,
+  UpdateUserProfileDto,
+  AdminTransferRequestDto,
 } from '@/types';
 
 // ==========================================
@@ -100,6 +105,66 @@ export async function getTransactionsApi(
   const response = await apiClient.get<PaginatedTransactionsResponseDto>(
     APP_CONFIG.transactionsPath,
     { params: query }
+  );
+  return response.data;
+}
+
+// ==========================================
+// 3. User Management Endpoints (/admin/users)
+// ==========================================
+
+/**
+ * Fetch paginated user profiles with filtering and summary metrics
+ * GET /admin/users
+ */
+export async function getUsersListApi(
+  query: UsersQueryFilters = {}
+): Promise<UsersListResponseDto> {
+  const response = await apiClient.get<UsersListResponseDto>('/admin/users', {
+    params: query,
+  });
+  return response.data;
+}
+
+/**
+ * Fetch single user biodata, balance metrics, and recent activity
+ * GET /admin/users/:idOrUsername
+ */
+export async function getUserDetailsApi(
+  idOrUsername: string
+): Promise<UserDetailsResponseDto> {
+  const response = await apiClient.get<UserDetailsResponseDto>(
+    `/admin/users/${encodeURIComponent(idOrUsername)}`
+  );
+  return response.data;
+}
+
+/**
+ * Update user biodata and status
+ * PATCH /admin/users/:idOrUsername
+ */
+export async function updateUserProfileApi(
+  idOrUsername: string,
+  dto: UpdateUserProfileDto
+): Promise<UserDetailsResponseDto> {
+  const response = await apiClient.patch<UserDetailsResponseDto>(
+    `/admin/users/${encodeURIComponent(idOrUsername)}`,
+    dto
+  );
+  return response.data;
+}
+
+/**
+ * Admin transfer from user balance
+ * POST /admin/users/:idOrUsername/transfer
+ */
+export async function adminTransferBalanceApi(
+  fromUserIdOrUsername: string,
+  dto: AdminTransferRequestDto
+): Promise<{ success: boolean; transferCode: string; amount: number; senderBalanceAfter: number }> {
+  const response = await apiClient.post(
+    `/admin/users/${encodeURIComponent(fromUserIdOrUsername)}/transfer`,
+    dto
   );
   return response.data;
 }

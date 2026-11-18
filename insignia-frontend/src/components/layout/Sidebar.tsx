@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
 import {
   LayoutDashboard,
+  Users,
   ArrowLeftRight,
   TrendingUp,
   Trophy,
@@ -23,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const navItems = [
     { name: 'Overview', to: '/', icon: LayoutDashboard },
+    { name: 'Users', to: '/users', icon: Users },
     { name: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
     { name: 'Top Transactions', to: '/top-transactions', icon: TrendingUp },
     { name: 'Top Users', to: '/top-users', icon: Trophy },

@@ -10,11 +10,13 @@ import {
   TransferDto,
   LoginDto,
   TransactionRecordDto,
+  UpdateUserProfileDto,
+  AdminTransferRequestDto,
 } from '@/types';
 
 // Stateful in-memory stores for Demo mode simulation
 let usersStore: MockUser[] = JSON.parse(JSON.stringify(INITIAL_MOCK_USERS));
-let transactionsStore: (TransactionRecordDto & { owner: string })[] = JSON.parse(
+let transactionsStore: (TransactionRecordDto & { owner: string; notes?: string })[] = JSON.parse(
   JSON.stringify(INITIAL_MOCK_TRANSACTIONS)
 );
 
@@ -32,11 +34,14 @@ export function resetMockDatabase() {
  */
 function getAuthenticatedUser(request: Request): MockUser | null {
   const authHeader = request.headers.get('Authorization');
-  if (!authHeader) return null;
+  if (!authHeader) {
+    // In demo mode default to admin if not provided
+    return usersStore.find((u) => u.username === 'admin') || usersStore[0] || null;
+  }
 
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   const found = usersStore.find((u) => u.token === token);
-  return found || null;
+  return found || usersStore.find((u) => u.username === 'admin') || null;
 }
 
 export const handlers = [
@@ -61,9 +66,19 @@ export const handlers = [
 
       const newToken = `mock-token-${cleanUsername}-${Date.now()}`;
       const newUser: MockUser = {
+        id: `user-${Date.now()}`,
+        userCode: `USR-${String(usersStore.length + 1).padStart(4, '0')}`,
         username: cleanUsername,
+        fullName: cleanUsername,
+        email: `${cleanUsername}@example.com`,
+        phone: '+62 812 0000 0000',
+        dateOfBirth: '01 Jan 1995',
+        address: 'Indonesia',
+        status: 'Active',
         token: newToken,
         balance: 0,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
       };
 
       usersStore.push(newUser);
@@ -294,8 +309,6 @@ export const handlers = [
       return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Rank by total aggregated outgoing transfer value (positive number).
-    // Incoming transfers do not count toward this ranking.
     const outgoingMap = new Map<string, number>();
 
     for (const txn of transactionsStore) {
@@ -305,7 +318,6 @@ export const handlers = [
       }
     }
 
-    // Convert map to array, sort descending, return up to 10
     const topUsers = Array.from(outgoingMap.entries())
       .map(([username, transacted_value]) => ({
         username,
@@ -335,10 +347,8 @@ export const handlers = [
     const dateFrom = url.searchParams.get('dateFrom') || '';
     const dateTo = url.searchParams.get('dateTo') || '';
 
-    // Filter to authenticated user's transactions
     let filtered = transactionsStore.filter((t) => t.owner === user.username);
 
-    // Apply search filter (by counterparty username or transaction ID)
     if (search) {
       filtered = filtered.filter(
         (t) =>
@@ -347,14 +357,12 @@ export const handlers = [
       );
     }
 
-    // Apply direction filter
     if (direction === 'incoming') {
       filtered = filtered.filter((t) => t.amount > 0);
     } else if (direction === 'outgoing') {
       filtered = filtered.filter((t) => t.amount < 0);
     }
 
-    // Apply date range filter
     if (dateFrom) {
       const fromTime = new Date(dateFrom).getTime();
       if (!isNaN(fromTime)) {
@@ -381,5 +389,241 @@ export const handlers = [
       },
       { status: 200 }
     );
+  }),
+
+  // ----------------------------------------------------
+  // 9. GET /admin/users (Users List with Stats)
+  // ----------------------------------------------------
+  http.get('*/admin/users', ({ request }) => {
+    const url = new URL(request.url);
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+    const pageSize = Math.max(1, parseInt(url.searchParams.get('pageSize') || '10', 10));
+    const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+    const status = url.searchParams.get('status') || '';
+
+    let filtered = [...usersStore];
+
+    if (search) {
+      filtered = filtered.filter(
+        (u) =>
+          u.fullName.toLowerCase().includes(search) ||
+          u.username.toLowerCase().includes(search) ||
+          u.email.toLowerCase().includes(search) ||
+          u.userCode.toLowerCase().includes(search)
+      );
+    }
+
+    if (status && status !== 'All statuses') {
+      filtered = filtered.filter((u) => u.status.toLowerCase() === status.toLowerCase());
+    }
+
+    const total = filtered.length;
+    const startIndex = (page - 1) * pageSize;
+    const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
+
+    const totalUsers = usersStore.length;
+    const activeUsers = usersStore.filter((u) => u.status === 'Active').length;
+    const totalWalletBalance = usersStore.reduce((sum, u) => sum + u.balance, 0);
+
+    return HttpResponse.json(
+      {
+        items: paginatedItems,
+        page,
+        pageSize,
+        total,
+        stats: {
+          totalUsers,
+          activeUsers,
+          totalWalletBalance,
+        },
+      },
+      { status: 200 }
+    );
+  }),
+
+  // ----------------------------------------------------
+  // 10. GET /admin/users/:idOrUsername (User Details)
+  // ----------------------------------------------------
+  http.get('*/admin/users/:idOrUsername', ({ params }) => {
+    const param = String(params.idOrUsername).toLowerCase();
+    const user = usersStore.find(
+      (u) =>
+        u.id.toLowerCase() === param ||
+        u.username.toLowerCase() === param ||
+        u.userCode.toLowerCase() === param
+    );
+
+    if (!user) {
+      return HttpResponse.json({ message: `User '${params.idOrUsername}' not found` }, { status: 404 });
+    }
+
+    // Get user's transactions
+    const userTxns = transactionsStore.filter((t) => t.owner === user.username);
+    let totalReceived = 0;
+    let totalSent = 0;
+
+    userTxns.forEach((t) => {
+      if (t.amount > 0) totalReceived += t.amount;
+      else totalSent += Math.abs(t.amount);
+    });
+
+    // Provide default mockup figures if andre
+    if (user.username === 'andre') {
+      totalReceived = 40000;
+      totalSent = 15500;
+    }
+
+    const recentTransactions = userTxns.slice(0, 10).map((t) => ({
+      id: t.id,
+      counterparty: t.username,
+      counterpartyName: usersStore.find((u) => u.username === t.username)?.fullName || t.username,
+      direction: t.amount > 0 ? ('incoming' as const) : ('outgoing' as const),
+      amount: t.amount,
+      createdAt: t.created_at,
+      notes: t.notes || t.description,
+    }));
+
+    return HttpResponse.json(
+      {
+        id: user.id,
+        userCode: user.userCode,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        address: user.address,
+        status: user.status,
+        balance: user.balance,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        stats: {
+          availableBalance: user.balance,
+          totalReceived,
+          totalSent,
+        },
+        recentTransactions,
+      },
+      { status: 200 }
+    );
+  }),
+
+  // ----------------------------------------------------
+  // 11. PATCH /admin/users/:idOrUsername (Update User Profile)
+  // ----------------------------------------------------
+  http.patch('*/admin/users/:idOrUsername', async ({ params, request }) => {
+    const param = String(params.idOrUsername).toLowerCase();
+    const user = usersStore.find(
+      (u) =>
+        u.id.toLowerCase() === param ||
+        u.username.toLowerCase() === param ||
+        u.userCode.toLowerCase() === param
+    );
+
+    if (!user) {
+      return HttpResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
+    try {
+      const body = (await request.json()) as UpdateUserProfileDto;
+      if (body.fullName !== undefined) user.fullName = body.fullName;
+      if (body.email !== undefined) user.email = body.email;
+      if (body.phone !== undefined) user.phone = body.phone;
+      if (body.dateOfBirth !== undefined) user.dateOfBirth = body.dateOfBirth;
+      if (body.address !== undefined) user.address = body.address;
+      if (body.status !== undefined) user.status = body.status;
+
+      return HttpResponse.json(user, { status: 200 });
+    } catch {
+      return HttpResponse.json({ message: 'Invalid update body' }, { status: 400 });
+    }
+  }),
+
+  // ----------------------------------------------------
+  // 12. POST /admin/users/:idOrUsername/transfer (Admin Transfer)
+  // ----------------------------------------------------
+  http.post('*/admin/users/:idOrUsername/transfer', async ({ params, request }) => {
+    const param = String(params.idOrUsername).toLowerCase();
+    const sender = usersStore.find(
+      (u) =>
+        u.id.toLowerCase() === param ||
+        u.username.toLowerCase() === param ||
+        u.userCode.toLowerCase() === param
+    );
+
+    if (!sender) {
+      return HttpResponse.json({ message: 'Sender not found' }, { status: 404 });
+    }
+
+    try {
+      const body = (await request.json()) as AdminTransferRequestDto;
+      const { to_username, amount: rawAmount, notes } = body;
+      const amount = Number(rawAmount);
+
+      if (!to_username) {
+        return HttpResponse.json({ message: 'Recipient is required' }, { status: 400 });
+      }
+
+      const recipient = usersStore.find(
+        (u) => u.username.toLowerCase() === to_username.toLowerCase()
+      );
+
+      if (!recipient) {
+        return HttpResponse.json({ message: `Recipient '${to_username}' not found` }, { status: 404 });
+      }
+
+      if (sender.username.toLowerCase() === recipient.username.toLowerCase()) {
+        return HttpResponse.json({ message: 'Cannot transfer to same user' }, { status: 400 });
+      }
+
+      if (isNaN(amount) || amount <= 0) {
+        return HttpResponse.json({ message: 'Amount must be greater than 0' }, { status: 400 });
+      }
+
+      if (sender.balance < amount) {
+        return HttpResponse.json(
+          { message: `Insufficient balance. Available: ${sender.balance} units` },
+          { status: 400 }
+        );
+      }
+
+      sender.balance -= amount;
+      recipient.balance += amount;
+
+      const code = `TXN-${txnIdCounter++}`;
+      const now = new Date().toISOString();
+
+      transactionsStore.unshift({
+        id: code,
+        owner: sender.username,
+        username: recipient.username,
+        amount: -amount,
+        created_at: now,
+        description: notes || `Transfer to @${recipient.username}`,
+        notes,
+      });
+
+      transactionsStore.unshift({
+        id: `TXN-${txnIdCounter++}`,
+        owner: recipient.username,
+        username: sender.username,
+        amount: amount,
+        created_at: now,
+        description: notes || `Transfer from @${sender.username}`,
+        notes,
+      });
+
+      return HttpResponse.json(
+        {
+          success: true,
+          transferCode: code,
+          amount,
+          senderBalanceAfter: sender.balance,
+        },
+        { status: 200 }
+      );
+    } catch {
+      return HttpResponse.json({ message: 'Invalid transfer payload' }, { status: 400 });
+    }
   }),
 ];

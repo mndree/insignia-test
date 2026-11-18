@@ -2,6 +2,8 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  NotFoundException,
+  BadRequestException,
   OnModuleInit,
   Logger,
 } from '@nestjs/common';
@@ -11,6 +13,8 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AdminLoginDto } from './dto/admin-login.dto.js';
 import { AdminRegisterDto } from './dto/admin-register.dto.js';
 import { AdminLoginResponseDto } from './dto/admin-response.dto.js';
+import { UsersQueryDto, UpdateUserDto, AdminTransferDto } from './dto/admin-user.dto.js';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -42,7 +46,14 @@ export class AdminService implements OnModuleInit {
       // Also ensure a corresponding user record exists for transfers/topups
       await this.prisma.user.upsert({
         where: { username: 'admin' },
-        create: { username: 'admin', balance: 1000 },
+        create: {
+          userCode: 'USR-0000',
+          username: 'admin',
+          fullName: 'Administrator',
+          email: 'admin@insignia.wallet',
+          status: 'Active',
+          balance: 14250,
+        },
         update: {},
       });
 
@@ -71,7 +82,12 @@ export class AdminService implements OnModuleInit {
     // Ensure corresponding user record
     const user = await this.prisma.user.upsert({
       where: { username: dto.username },
-      create: { username: dto.username, balance: 1000 },
+      create: {
+        username: dto.username,
+        fullName: dto.username,
+        balance: 1000,
+        status: 'Active',
+      },
       update: {},
     });
 
@@ -107,7 +123,12 @@ export class AdminService implements OnModuleInit {
 
     const user = await this.prisma.user.upsert({
       where: { username: admin.username },
-      create: { username: admin.username, balance: 1000 },
+      create: {
+        username: admin.username,
+        fullName: admin.username,
+        balance: 1000,
+        status: 'Active',
+      },
       update: {},
     });
 
@@ -124,6 +145,248 @@ export class AdminService implements OnModuleInit {
         id: admin.id,
         username: admin.username,
       },
+    };
+  }
+
+  // ==========================================
+  // Admin User Management Services
+  // ==========================================
+
+  async getUsers(query: UsersQueryDto) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const pageSize = Math.max(1, Number(query.pageSize) || 10);
+    const skip = (page - 1) * pageSize;
+
+    const where: Prisma.UserWhereInput = {};
+
+    if (query.search && query.search.trim()) {
+      const term = query.search.trim();
+      where.OR = [
+        { fullName: { contains: term, mode: 'insensitive' } },
+        { username: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+        { userCode: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.status && query.status !== 'All statuses') {
+      where.status = { equals: query.status, mode: 'insensitive' };
+    }
+
+    const [items, total, totalUsers, activeUsers, balanceAggregate] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: [{ userCode: 'asc' }, { createdAt: 'desc' }],
+      }),
+      this.prisma.user.count({ where }),
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { status: 'Active' } }),
+      this.prisma.user.aggregate({
+        _sum: {
+          balance: true,
+        },
+      }),
+    ]);
+
+    const totalWalletBalance = Number(balanceAggregate._sum.balance || 0);
+
+    return {
+      items: items.map((u) => ({
+        id: u.id,
+        userCode: u.userCode || u.id.slice(0, 8),
+        username: u.username,
+        fullName: u.fullName || u.username,
+        email: u.email || `${u.username}@example.com`,
+        phone: u.phone || '-',
+        dateOfBirth: u.dateOfBirth || '-',
+        address: u.address || '-',
+        status: u.status,
+        balance: Number(u.balance),
+        createdAt: u.createdAt,
+        lastLoginAt: u.lastLoginAt,
+      })),
+      page,
+      pageSize,
+      total,
+      stats: {
+        totalUsers,
+        activeUsers,
+        totalWalletBalance,
+      },
+    };
+  }
+
+  async getUserDetails(idOrUsername: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: idOrUsername },
+          { username: idOrUsername },
+          { userCode: idOrUsername },
+        ],
+      },
+      include: {
+        sentTransfers: {
+          include: { toUser: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        receivedTransfers: {
+          include: { fromUser: true },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User '${idOrUsername}' not found`);
+    }
+
+    // Calculate total received and total sent
+    let totalSent = 0;
+    for (const t of user.sentTransfers) {
+      totalSent += Number(t.amount);
+    }
+
+    let totalReceived = 0;
+    for (const t of user.receivedTransfers) {
+      totalReceived += Number(t.amount);
+    }
+
+    // Combine and sort recent transactions
+    const allTransfers = [
+      ...user.sentTransfers.map((t) => ({
+        id: t.transferCode || t.id.slice(0, 8),
+        counterparty: t.toUser.username,
+        counterpartyName: t.toUser.fullName || t.toUser.username,
+        direction: 'outgoing' as const,
+        amount: -Number(t.amount),
+        createdAt: t.createdAt,
+        notes: t.notes,
+      })),
+      ...user.receivedTransfers.map((t) => ({
+        id: t.transferCode || t.id.slice(0, 8),
+        counterparty: t.fromUser.username,
+        counterpartyName: t.fromUser.fullName || t.fromUser.username,
+        direction: 'incoming' as const,
+        amount: Number(t.amount),
+        createdAt: t.createdAt,
+        notes: t.notes,
+      })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return {
+      id: user.id,
+      userCode: user.userCode || 'USR-0001',
+      username: user.username,
+      fullName: user.fullName || user.username,
+      email: user.email || `${user.username}@example.com`,
+      phone: user.phone || '+62 812 3456 7890',
+      dateOfBirth: user.dateOfBirth || '15 May 1996',
+      address: user.address || 'South Jakarta, Indonesia',
+      status: user.status,
+      balance: Number(user.balance),
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt,
+      stats: {
+        availableBalance: Number(user.balance),
+        totalReceived,
+        totalSent,
+      },
+      recentTransactions: allTransfers.slice(0, 10),
+    };
+  }
+
+  async updateUser(id: string, dto: UpdateUserDto) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ id }, { username: id }, { userCode: id }],
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User '${id}' not found`);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        ...(dto.fullName !== undefined && { fullName: dto.fullName }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        ...(dto.phone !== undefined && { phone: dto.phone }),
+        ...(dto.dateOfBirth !== undefined && { dateOfBirth: dto.dateOfBirth }),
+        ...(dto.address !== undefined && { address: dto.address }),
+        ...(dto.status !== undefined && { status: dto.status }),
+      },
+    });
+
+    return updated;
+  }
+
+  async transferUserBalance(fromUserId: string, dto: AdminTransferDto) {
+    const sender = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ id: fromUserId }, { username: fromUserId }, { userCode: fromUserId }],
+      },
+    });
+
+    if (!sender) {
+      throw new NotFoundException(`Sender user '${fromUserId}' not found`);
+    }
+
+    const amount = Number(dto.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new BadRequestException('Transfer amount must be greater than 0');
+    }
+
+    if (Number(sender.balance) < amount) {
+      throw new BadRequestException(
+        `Insufficient balance. Available: ${sender.balance} units, requested: ${amount} units`
+      );
+    }
+
+    const recipient = await this.prisma.user.findUnique({
+      where: { username: dto.to_username.trim().toLowerCase() },
+    });
+
+    if (!recipient) {
+      throw new NotFoundException(`Recipient user '${dto.to_username}' not found`);
+    }
+
+    if (sender.id === recipient.id) {
+      throw new BadRequestException('Cannot transfer funds to the same user');
+    }
+
+    const transferCount = await this.prisma.transfer.count();
+    const transferCode = `TXN-${9022 + transferCount}`;
+
+    // Execute atomic balance update and transfer record in transaction
+    const [transfer] = await this.prisma.$transaction([
+      this.prisma.transfer.create({
+        data: {
+          transferCode,
+          fromUserId: sender.id,
+          toUserId: recipient.id,
+          amount,
+          notes: dto.notes,
+        },
+      }),
+      this.prisma.user.update({
+        where: { id: sender.id },
+        data: { balance: { decrement: amount } },
+      }),
+      this.prisma.user.update({
+        where: { id: recipient.id },
+        data: { balance: { increment: amount } },
+      }),
+    ]);
+
+    return {
+      success: true,
+      transferCode: transfer.transferCode,
+      amount,
+      senderBalanceAfter: Number(sender.balance) - amount,
     };
   }
 }

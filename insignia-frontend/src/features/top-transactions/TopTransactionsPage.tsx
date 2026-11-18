@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 
 export const TopTransactionsPage: React.FC = () => {
-  const { onOpenSidebar } = useOutletContext<{ onOpenSidebar: () => void }>();
+  const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
 
   const {
     data,

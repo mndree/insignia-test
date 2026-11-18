@@ -18,11 +18,19 @@ model Admin {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  balance   Decimal  @default(0) @db.Decimal(18, 2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  userCode    String?  @unique
+  username    String   @unique
+  fullName    String?
+  email       String?
+  phone       String?
+  dateOfBirth String?
+  address     String?
+  status      String   @default("Active")
+  balance     Decimal  @default(0) @db.Decimal(18, 2)
+  lastLoginAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   sentTransfers     Transfer[] @relation("SentTransfers")
   receivedTransfers Transfer[] @relation("ReceivedTransfers")
@@ -43,13 +51,15 @@ model Topup {
 }
 
 model Transfer {
-  id          String   @id @default(uuid())
-  fromUserId  String
-  fromUser    User     @relation("SentTransfers", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUserId    String
-  toUser      User     @relation("ReceivedTransfers", fields: [toUserId], references: [id], onDelete: Cascade)
-  amount      Decimal  @db.Decimal(18, 2)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(uuid())
+  transferCode String?  @unique
+  fromUserId   String
+  fromUser     User     @relation("SentTransfers", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId     String
+  toUser       User     @relation("ReceivedTransfers", fields: [toUserId], references: [id], onDelete: Cascade)
+  amount       Decimal  @db.Decimal(18, 2)
+  notes        String?
+  createdAt    DateTime @default(now())
 
   @@index([fromUserId])
   @@index([toUserId])

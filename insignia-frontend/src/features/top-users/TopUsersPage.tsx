@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 
 export const TopUsersPage: React.FC = () => {
-  const { onOpenSidebar } = useOutletContext<{ onOpenSidebar: () => void }>();
+  const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
   const { user: currentUser } = useAuth();
 
   const {

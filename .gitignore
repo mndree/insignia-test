@@ -4,5 +4,8 @@ build/
 .env
 *.log
 *.tsbuildinfo
+*.d.ts
+vite.config.js
+vitest.config.js
 .DS_Store
 Thumbs.db

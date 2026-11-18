@@ -15,7 +15,8 @@ import { normalizeApiError } from '@/services/api/client';
 import { RefreshCw, FileText, AlertTriangle } from 'lucide-react';
 
 export const TransactionsPage: React.FC = () => {
-  const { onOpenSidebar } = useOutletContext<{ onOpenSidebar: () => void }>();
+  const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Read URL query parameters

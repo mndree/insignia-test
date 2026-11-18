@@ -97,7 +97,93 @@ export interface PaginatedTransactionsResponseDto {
 }
 
 // ==========================================
-// 3. UI Models & Analytics Summaries
+// 3. User Management Models (Users List & Detail)
+// ==========================================
+
+export interface UserListItemDto {
+  id: string;
+  userCode: string;
+  username: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  address: string;
+  status: 'Active' | 'Inactive';
+  balance: number;
+  createdAt: string;
+  lastLoginAt: string;
+}
+
+export interface UserStatsDto {
+  totalUsers: number;
+  activeUsers: number;
+  totalWalletBalance: number;
+}
+
+export interface UsersQueryFilters {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: string;
+}
+
+export interface UsersListResponseDto {
+  items: UserListItemDto[];
+  page: number;
+  pageSize: number;
+  total: number;
+  stats: UserStatsDto;
+}
+
+export interface UserRecentTransactionDto {
+  id: string;
+  counterparty: string;
+  counterpartyName?: string;
+  direction: 'incoming' | 'outgoing';
+  amount: number; // Signed: positive for incoming, negative for outgoing
+  createdAt: string;
+  notes?: string;
+}
+
+export interface UserDetailsResponseDto {
+  id: string;
+  userCode: string;
+  username: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  address: string;
+  status: 'Active' | 'Inactive';
+  balance: number;
+  createdAt: string;
+  lastLoginAt: string;
+  stats: {
+    availableBalance: number;
+    totalReceived: number;
+    totalSent: number;
+  };
+  recentTransactions: UserRecentTransactionDto[];
+}
+
+export interface UpdateUserProfileDto {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  address?: string;
+  status?: 'Active' | 'Inactive';
+}
+
+export interface AdminTransferRequestDto {
+  to_username: string;
+  amount: number;
+  notes?: string;
+}
+
+// ==========================================
+// 4. UI Models & Analytics Summaries
 // ==========================================
 
 export interface TransactionSummaryStats {
