@@ -454,4 +454,82 @@ export class AdminService implements OnModuleInit {
       senderBalanceAfter: Number(sender.balance) - amount,
     };
   }
+
+  async changeAdminPassword(username: string, newPassword: string, currentPassword?: string) {
+    if (!username || !newPassword) {
+      throw new BadRequestException('Username and new password are required');
+    }
+
+    const admin = await this.prisma.admin.findUnique({ where: { username } });
+    if (admin && currentPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, admin.password);
+      if (!isMatch) {
+        throw new BadRequestException('Current password does not match');
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    if (admin) {
+      await this.prisma.admin.update({
+        where: { username },
+        data: { password: hashedPassword },
+      });
+    }
+
+    // Also update in users table if exists
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (user) {
+      await this.prisma.user.update({
+        where: { username },
+        data: { password: hashedPassword },
+      });
+    }
+
+    return {
+      success: true,
+      message: 'Password successfully changed',
+    };
+  }
+
+  async getAdminProfile(username: string) {
+    let user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      // Create record if admin
+      user = await this.prisma.user.create({
+        data: {
+          userCode: 'USR-0000',
+          username,
+          fullName: 'System Administrator',
+          email: `${username}@insignia.wallet`,
+          status: 'Active',
+        },
+      });
+    }
+
+    return user;
+  }
+
+  async updateAdminProfile(username: string, dto: UpdateUserDto) {
+    let user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      user = await this.getAdminProfile(username);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { username },
+      data: {
+        fullName: dto.fullName !== undefined ? dto.fullName : user.fullName,
+        email: dto.email !== undefined ? dto.email : user.email,
+        phone: dto.phone !== undefined ? dto.phone : user.phone,
+        dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : user.dateOfBirth,
+        address: dto.address !== undefined ? dto.address : user.address,
+      },
+    });
+
+    return updated;
+  }
 }

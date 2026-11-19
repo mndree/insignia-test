@@ -670,4 +670,57 @@ export const handlers = [
       return HttpResponse.json({ message: 'Invalid transfer payload' }, { status: 400 });
     }
   }),
+
+  // Change Admin Password
+  http.patch('*/admin/change-password', async ({ request }) => {
+    try {
+      const body = (await request.json()) as any;
+      return HttpResponse.json({
+        success: true,
+        message: 'Password successfully updated for ' + (body.username || 'admin'),
+      });
+    } catch {
+      return HttpResponse.json({ message: 'Failed to update password' }, { status: 400 });
+    }
+  }),
+
+  // Get Admin Profile
+  http.get('*/admin/profile/:username', ({ params }) => {
+    const { username } = params;
+    const user = usersStore.find((u) => u.username.toLowerCase() === String(username).toLowerCase());
+    return HttpResponse.json({
+      id: user?.id || 'admin-001',
+      username: username || 'admin',
+      fullName: user?.fullName || 'System Administrator',
+      email: user?.email || 'admin@insignia.wallet',
+      phone: user?.phone || '+62 812 3456 7890',
+      dateOfBirth: user?.dateOfBirth || '15 May 1996',
+      address: user?.address || 'Jakarta, Indonesia',
+      status: 'Active',
+      balance: user?.balance || 24500,
+    });
+  }),
+
+  // Update Admin Profile
+  http.patch('*/admin/profile/:username', async ({ params, request }) => {
+    const { username } = params;
+    try {
+      const body = (await request.json()) as any;
+      const user = usersStore.find((u) => u.username.toLowerCase() === String(username).toLowerCase());
+      if (user) {
+        if (body.fullName !== undefined) user.fullName = body.fullName;
+        if (body.email !== undefined) user.email = body.email;
+        if (body.phone !== undefined) user.phone = body.phone;
+        if (body.dateOfBirth !== undefined) user.dateOfBirth = body.dateOfBirth;
+        if (body.address !== undefined) user.address = body.address;
+      }
+      return HttpResponse.json({
+        success: true,
+        message: 'Profile updated successfully',
+        ...body,
+      });
+    } catch {
+      return HttpResponse.json({ message: 'Failed to update profile' }, { status: 400 });
+    }
+  }),
 ];

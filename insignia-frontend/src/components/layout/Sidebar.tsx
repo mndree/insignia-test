@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/features/auth/useAuth';
 import {
@@ -10,8 +10,13 @@ import {
   LogOut,
   Wallet,
   X,
-  UserCheck,
+  Lock,
+  UserPen,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
+import { ChangePasswordModal } from './ChangePasswordModal';
+import { ChangeBiodataModal } from './ChangeBiodataModal';
 import { cn } from '@/utils/cn';
 
 interface SidebarProps {
@@ -21,6 +26,24 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isChangeBiodataOpen, setIsChangeBiodataOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   const navItems = [
     { name: 'Overview', to: '/', icon: LayoutDashboard },
@@ -91,30 +114,74 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         })}
       </nav>
 
-      {/* Authenticated User & Logout */}
-      <div className="p-4 border-t border-slate-100 bg-slate-50/60">
-        <div className="flex items-center justify-between gap-3 p-2 rounded-xl bg-white border border-slate-200/80 shadow-xs">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-200/60 flex items-center justify-center text-brand-700 shrink-0 font-bold text-xs uppercase">
-              {user?.username ? user.username.slice(0, 2) : <UserCheck className="w-4 h-4" />}
+      {/* Authenticated User & Popup Menu */}
+      <div className="p-3.5 border-t border-slate-100 bg-slate-50/60 relative" ref={menuRef}>
+        {/* Popup Menu (Change Password / Change Biodata) */}
+        {isMenuOpen && (
+          <div className="absolute bottom-full left-3.5 right-3.5 mb-2.5 bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsChangePasswordOpen(true);
+              }}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-navy-900 bg-indigo-50/70 hover:bg-indigo-100/80 transition-colors text-left group"
+            >
+              <Lock className="w-4 h-4 text-navy-800 stroke-[2.2]" />
+              <span>Change Password</span>
+            </button>
+
+            <div className="h-px bg-slate-100 my-1 mx-2" />
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsChangeBiodataOpen(true);
+              }}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-navy-900 hover:bg-slate-50 transition-colors text-left group"
+            >
+              <UserPen className="w-4 h-4 text-navy-800 stroke-[2.2]" />
+              <span>Change Biodata</span>
+            </button>
+          </div>
+        )}
+
+        {/* User Footer Card */}
+        <div className="flex items-center justify-between gap-2.5 p-2 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="flex items-center gap-2.5 min-w-0 flex-1 text-left hover:opacity-90 transition-opacity focus-ring rounded-xl p-1 -m-1"
+            title="Account options"
+          >
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0">
+              {user?.username ? user.username.slice(0, 2).toUpperCase() : 'AD'}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-navy-900 truncate">
-                @{user?.username || 'user'}
-              </p>
-              <p className="text-[10px] text-slate-400 font-medium truncate">
+              <div className="flex items-center gap-1">
+                <span className="text-xs sm:text-sm font-bold text-navy-900 truncate">
+                  @{user?.username || 'admin'}
+                </span>
+                {isMenuOpen ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-navy-700 stroke-[2.5]" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 stroke-[2.5]" />
+                )}
+              </div>
+              <span className="block text-[11px] text-slate-400 font-medium truncate mt-0.5">
                 Active Session
-              </p>
+              </span>
             </div>
-          </div>
+          </button>
 
           <button
             onClick={logout}
             title="Log out of session"
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors focus-ring"
+            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors focus-ring shrink-0"
             aria-label="Log out"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 stroke-[2]" />
           </button>
         </div>
       </div>
@@ -145,6 +212,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       >
         {content}
       </div>
+
+      {/* Modals */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        username={user?.username || 'admin'}
+      />
+
+      <ChangeBiodataModal
+        isOpen={isChangeBiodataOpen}
+        onClose={() => setIsChangeBiodataOpen(false)}
+        username={user?.username || 'admin'}
+      />
     </>
   );
 };

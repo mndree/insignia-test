@@ -21,7 +21,7 @@ import {
 
 export const TopTransactionsPage: React.FC = () => {
   const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
-  const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => { });
 
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>(null);
@@ -232,9 +232,8 @@ export const TopTransactionsPage: React.FC = () => {
                         )}
                       </td>
                       <td
-                        className={`py-3.5 px-4 sm:px-6 text-right whitespace-nowrap font-mono font-semibold ${
-                          isIncoming ? 'text-incoming font-bold' : 'text-outgoing'
-                        }`}
+                        className={`py-3.5 px-4 sm:px-6 text-right whitespace-nowrap font-mono font-semibold ${isIncoming ? 'text-incoming font-bold' : 'text-outgoing'
+                          }`}
                       >
                         {formatWalletUnits(item.amount, { includeSign: true })}
                       </td>

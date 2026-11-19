@@ -168,3 +168,44 @@ export async function adminTransferBalanceApi(
   );
   return response.data;
 }
+
+/**
+ * Change admin password
+ * PATCH /admin/change-password
+ */
+export async function changePasswordApi(dto: {
+  username: string;
+  newPassword: string;
+  currentPassword?: string;
+}): Promise<{ success: boolean; message: string }> {
+  const response = await apiClient.patch('/admin/change-password', dto);
+  return response.data;
+}
+
+/**
+ * Get profile for authenticated user/admin
+ * GET /admin/profile/:username
+ */
+export async function getAdminProfileApi(
+  username: string
+): Promise<UserDetailsResponseDto> {
+  const response = await apiClient.get<UserDetailsResponseDto>(
+    `/admin/profile/${encodeURIComponent(username)}`
+  );
+  return response.data;
+}
+
+/**
+ * Update profile for authenticated user/admin
+ * PATCH /admin/profile/:username
+ */
+export async function updateAdminProfileApi(
+  username: string,
+  dto: UpdateUserProfileDto
+): Promise<any> {
+  const response = await apiClient.patch(
+    `/admin/profile/${encodeURIComponent(username)}`,
+    dto
+  );
+  return response.data;
+}

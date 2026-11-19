@@ -90,6 +90,32 @@ export class AdminController {
   ) {
     return this.adminService.transferUserBalance(id, dto);
   }
+
+  @Patch('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password for admin account' })
+  changePassword(
+    @Body() dto: { username: string; newPassword: string; currentPassword?: string },
+  ) {
+    return this.adminService.changeAdminPassword(dto.username, dto.newPassword, dto.currentPassword);
+  }
+
+  @Get('profile/:username')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get profile information for admin account' })
+  getProfile(@Param('username') username: string) {
+    return this.adminService.getAdminProfile(username);
+  }
+
+  @Patch('profile/:username')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update profile information for admin account' })
+  updateProfile(
+    @Param('username') username: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.adminService.updateAdminProfile(username, dto);
+  }
 }
 
 @ApiTags('Auth API')
