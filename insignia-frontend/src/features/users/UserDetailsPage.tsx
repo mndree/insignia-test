@@ -346,6 +346,11 @@ export const UserDetailsPage: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th scope="col" className="py-3 px-4 sm:px-6">ID</th>
+                  <th scope="col" className="py-3 px-4 sm:px-6">Counterparty</th>
+                  <th scope="col" className="py-3 px-4 sm:px-6">Direction</th>
+                  <th scope="col" className="py-3 px-4 sm:px-6 text-right">Amount</th>
+                  <th scope="col" className="py-3 px-4 sm:px-6 text-right">Date</th>
                   <TableColumnHeader
                     label="ID"
                     field="id"
@@ -405,25 +410,22 @@ export const UserDetailsPage: React.FC = () => {
 
                       <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium select-none ${
-                            isIncoming
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200/60'
-                          }`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium select-none ${isIncoming
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                            }`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isIncoming ? 'bg-emerald-500' : 'bg-rose-500'
-                            }`}
+                            className={`w-1.5 h-1.5 rounded-full ${isIncoming ? 'bg-emerald-500' : 'bg-rose-500'
+                              }`}
                           />
                           <span>{isIncoming ? 'Incoming' : 'Outgoing'}</span>
                         </span>
                       </td>
 
                       <td
-                        className={`py-3.5 px-4 sm:px-6 text-right font-mono font-bold whitespace-nowrap ${
-                          isIncoming ? 'text-incoming' : 'text-outgoing'
-                        }`}
+                        className={`py-3.5 px-4 sm:px-6 text-right font-mono font-bold whitespace-nowrap ${isIncoming ? 'text-incoming' : 'text-outgoing'
+                          }`}
                       >
                         {isIncoming ? `+${formatNumber(Math.abs(txn.amount))}` : `-${formatNumber(Math.abs(txn.amount))}`}{' '}
                         <span className="font-sans font-normal text-xs text-slate-500">units</span>
