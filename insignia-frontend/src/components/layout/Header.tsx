@@ -16,9 +16,9 @@ export const Header: React.FC<HeaderProps> = ({
   actions,
 }) => {
   return (
-    <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 py-4 transition-all">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-3">
           <button
             onClick={onOpenSidebar}
             className="lg:hidden p-2 rounded-lg text-slate-500 hover:text-navy-900 hover:bg-slate-200/70 focus-ring"
@@ -27,23 +27,21 @@ export const Header: React.FC<HeaderProps> = ({
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-navy-900 truncate">
-              {title}
-            </h1>
-            {description && (
-              <p className="text-xs sm:text-sm text-slate-500 truncate hidden sm:block">
-                {description}
-              </p>
-            )}
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-navy-900">
+            {title}
+          </h1>
         </div>
-
-        <div className="flex items-center gap-3">
-          <DemoBadge />
-          {actions}
-        </div>
+        {description && (
+          <p className="text-sm text-slate-500 mt-0.5">
+            {description}
+          </p>
+        )}
       </div>
-    </header>
+
+      <div className="flex items-center gap-2.5">
+        <DemoBadge />
+        {actions}
+      </div>
+    </div>
   );
 };

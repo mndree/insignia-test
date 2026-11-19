@@ -168,8 +168,9 @@ export const TransactionsPage: React.FC = () => {
             onClick={() => refetch()}
             disabled={isFetching || !isConfigured}
             aria-label="Refresh transactions"
+            className="bg-white hover:bg-slate-50 border-slate-200/90 text-navy-800 font-semibold"
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin text-brand-600' : ''}`} />
             Refresh
           </Button>
         }

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Header } from '@/components/layout/Header';
 import { getUsersListApi } from '@/services/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { UserAvatar } from './UserAvatar';
 import { StatusBadge } from './StatusBadge';
-import { DemoBadge } from '@/components/ui/DemoBadge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
@@ -228,27 +228,11 @@ export const UsersListPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onOpenSidebar}
-              className="lg:hidden p-2 rounded-lg text-slate-500 hover:text-navy-900 hover:bg-slate-200/70 focus-ring"
-              aria-label="Open sidebar"
-            >
-              <Users className="w-5 h-5" />
-            </button>
-            <h1 className="text-2xl font-bold tracking-tight text-navy-900">
-              Users
-            </h1>
-          </div>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Manage user profiles and wallet balances.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <DemoBadge />
+      <Header
+        onOpenSidebar={onOpenSidebar}
+        title="Users"
+        description="Manage user profiles and wallet balances."
+        actions={
           <Button
             variant="outline"
             size="sm"
@@ -259,8 +243,8 @@ export const UsersListPage: React.FC = () => {
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin text-brand-600' : ''}`} />
             Refresh
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
         <Alert variant="error" title="Failed to Load Users">
