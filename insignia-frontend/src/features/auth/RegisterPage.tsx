@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from './useAuth';
 import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
+import { checkUsernameApi } from '@/services/api/endpoints';
 import { formatPhoneNumber, formatDateInput } from '@/utils/masking';
 import { cn } from '@/utils/cn';
 import {
@@ -43,23 +44,29 @@ export const RegisterPage: React.FC = () => {
 
   // Submission & feedback state
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   // Validation for Step 1
   const validateStep1 = (): boolean => {
     setStepError(null);
+    setUsernameError(null);
     const cleanUser = username.trim();
     if (!cleanUser) {
       setStepError('Username is required.');
+      setUsernameError('Username is required.');
       return false;
     }
     if (cleanUser.length < 3) {
       setStepError('Username must be at least 3 characters.');
+      setUsernameError('Username must be at least 3 characters.');
       return false;
     }
     if (!/^[a-zA-Z0-9_-]+$/.test(cleanUser)) {
       setStepError('Username can only contain letters, numbers, underscores, and hyphens.');
+      setUsernameError('Username can only contain letters, numbers, underscores, and hyphens.');
       return false;
     }
     if (!password) {
@@ -77,10 +84,34 @@ export const RegisterPage: React.FC = () => {
     return true;
   };
 
-  const handleNextFromStep1 = (e: React.FormEvent) => {
+  const handleNextFromStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep1()) {
+    setUsernameError(null);
+    setStepError(null);
+
+    if (!validateStep1()) {
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    try {
+      const res = await checkUsernameApi(username.trim());
+      if (res.exists || !res.available) {
+        const errorMsg =
+          res.message || `Username '${username.trim()}' is already taken.`;
+        setStepError(errorMsg);
+        setUsernameError(errorMsg);
+        return;
+      }
+
+      // Username is available, advance to Step 2
       setCurrentStep(2);
+    } catch (err) {
+      const normalized = normalizeApiError(err);
+      setStepError(normalized.message);
+      setUsernameError(normalized.message);
+    } finally {
+      setIsCheckingUsername(false);
     }
   };
 
@@ -270,17 +301,38 @@ export const RegisterPage: React.FC = () => {
                   <label className="block text-[11px] font-bold text-navy-900 uppercase tracking-wide mb-1.5">
                     USERNAME <span className="text-brand-600">*</span>
                   </label>
-                  <div className="relative flex items-center rounded-xl border border-indigo-100/90 bg-[#f4f7fe]/80 focus-within:bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
-                    <User className="w-4 h-4 text-slate-400 ml-3.5 shrink-0" />
+                  <div
+                    className={cn(
+                      'relative flex items-center rounded-xl border bg-[#f4f7fe]/80 focus-within:bg-white focus-within:ring-2 transition-all',
+                      usernameError
+                        ? 'border-rose-400 bg-rose-50/30 focus-within:border-rose-500 focus-within:ring-rose-500/20'
+                        : 'border-indigo-100/90 focus-within:border-brand-500 focus-within:ring-brand-500/20'
+                    )}
+                  >
+                    <User
+                      className={cn(
+                        'w-4 h-4 ml-3.5 shrink-0',
+                        usernameError ? 'text-rose-400' : 'text-slate-400'
+                      )}
+                    />
                     <input
                       type="text"
                       placeholder="Choose a username"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        if (usernameError) setUsernameError(null);
+                        if (stepError) setStepError(null);
+                      }}
                       className="w-full bg-transparent px-3 py-2.5 text-sm text-navy-900 placeholder:text-slate-400 focus:outline-none"
                       required
                     />
                   </div>
+                  {usernameError && (
+                    <p className="text-xs text-rose-600 font-medium mt-1.5 flex items-center gap-1">
+                      <span>•</span> {usernameError}
+                    </p>
+                  )}
                 </div>
 
                 {/* Password */}
@@ -353,10 +405,20 @@ export const RegisterPage: React.FC = () => {
                 {/* Submit button */}
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-4"
+                  disabled={isCheckingUsername}
+                  className="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-4 disabled:opacity-75 disabled:cursor-not-allowed"
                 >
-                  <span>Continue</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {isCheckingUsername ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Checking availability...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Continue</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </form>
             )}

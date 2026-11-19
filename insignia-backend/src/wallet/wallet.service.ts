@@ -29,6 +29,28 @@ export class WalletService {
     private readonly jwtService: JwtService,
   ) {}
 
+  async checkUsername(username: string): Promise<{ exists: boolean; available: boolean; message: string }> {
+    const cleanUsername = (username || '').trim().toLowerCase();
+    if (!cleanUsername) {
+      return { exists: false, available: true, message: 'Username is empty' };
+    }
+    const existingUser = await this.prisma.user.findUnique({
+      where: { username: cleanUsername },
+    });
+    const existingAdmin = await this.prisma.admin.findUnique({
+      where: { username: cleanUsername },
+    });
+
+    const exists = Boolean(existingUser || existingAdmin);
+    return {
+      exists,
+      available: !exists,
+      message: exists
+        ? `Username '${username}' is already taken.`
+        : `Username '${username}' is available.`,
+    };
+  }
+
   async register(dto: RegisterUserDto): Promise<TokenResponseDto> {
     const cleanUsername = dto.username.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({

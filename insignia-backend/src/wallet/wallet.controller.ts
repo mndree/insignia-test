@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Query,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -53,6 +54,16 @@ export class WalletController {
   @ApiResponse({ status: 409, description: 'Username already taken' })
   register(@Body() dto: RegisterUserDto): Promise<TokenResponseDto> {
     return this.walletService.register(dto);
+  }
+
+  @Get(['user/check-username/:username', 'check-username/:username'])
+  @ApiOperation({ summary: 'Check if username is already registered' })
+  @ApiResponse({
+    status: 200,
+    description: 'Availability check result with exists and available booleans',
+  })
+  checkUsername(@Param('username') username: string) {
+    return this.walletService.checkUsername(username);
   }
 
   @Post('topup')

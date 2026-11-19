@@ -24,6 +24,23 @@ import {
 // ==========================================
 
 /**
+ * Check if a username is already taken
+ * GET /user/check-username/:username
+ */
+export interface CheckUsernameResponse {
+  exists: boolean;
+  available: boolean;
+  message: string;
+}
+
+export async function checkUsernameApi(username: string): Promise<CheckUsernameResponse> {
+  const response = await apiClient.get<CheckUsernameResponse>(
+    `/user/check-username/${encodeURIComponent(username.trim())}`
+  );
+  return response.data;
+}
+
+/**
  * Register a new user wallet
  * POST /user
  */

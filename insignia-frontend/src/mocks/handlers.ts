@@ -89,6 +89,33 @@ export const handlers = [
     }
   }),
 
+  // Check Username Availability
+  http.get('*/check-username/:username', ({ params }) => {
+    const { username } = params;
+    const cleanUsername = String(username || '').trim().toLowerCase();
+    const exists = usersStore.some((u) => u.username.toLowerCase() === cleanUsername);
+    return HttpResponse.json({
+      exists,
+      available: !exists,
+      message: exists
+        ? `Username '${username}' is already taken.`
+        : `Username '${username}' is available.`,
+    });
+  }),
+
+  http.get('*/user/check-username/:username', ({ params }) => {
+    const { username } = params;
+    const cleanUsername = String(username || '').trim().toLowerCase();
+    const exists = usersStore.some((u) => u.username.toLowerCase() === cleanUsername);
+    return HttpResponse.json({
+      exists,
+      available: !exists,
+      message: exists
+        ? `Username '${username}' is already taken.`
+        : `Username '${username}' is available.`,
+    });
+  }),
+
   // ----------------------------------------------------
   // 2. POST /auth/login & POST /admin/login (Proposed Extended API)
   // ----------------------------------------------------
