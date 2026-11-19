@@ -10,7 +10,6 @@ import {
   TrendingUp,
   Trophy,
   LogOut,
-  Wallet,
   X,
   Lock,
   UserPen,
@@ -73,9 +72,11 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       {/* Brand Header */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-sm">
-            <Wallet className="w-5 h-5" />
-          </div>
+          <img
+            src="/favicon.png"
+            alt="Insignia Wallet"
+            className="w-10 h-10 rounded-xl object-contain shadow-xs select-none"
+          />
           <div>
             <h1 className="text-base font-bold tracking-tight text-navy-900">
               Insignia Wallet
