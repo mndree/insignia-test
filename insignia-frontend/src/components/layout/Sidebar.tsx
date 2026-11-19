@@ -24,36 +24,43 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+interface SidebarContentProps {
+  onClose?: () => void;
+  onOpenChangePassword: () => void;
+  onOpenChangeBiodata: () => void;
+}
+
+const navItems = [
+  { name: 'Overview', to: '/', icon: LayoutDashboard },
+  { name: 'Users', to: '/users', icon: Users },
+  { name: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
+  { name: 'Top Transactions', to: '/top-transactions', icon: TrendingUp },
+  { name: 'Top Users', to: '/top-users', icon: Trophy },
+];
+
+const SidebarContent: React.FC<SidebarContentProps> = ({
+  onClose,
+  onOpenChangePassword,
+  onOpenChangeBiodata,
+}) => {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
-  const [isChangeBiodataOpen, setIsChangeBiodataOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    if (!isMenuOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (footerRef.current && !footerRef.current.contains(e.target as Node)) {
         setIsMenuOpen(false);
       }
     };
-    if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleOutsideClick);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleOutsideClick);
     };
   }, [isMenuOpen]);
 
-  const navItems = [
-    { name: 'Overview', to: '/', icon: LayoutDashboard },
-    { name: 'Users', to: '/users', icon: Users },
-    { name: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
-    { name: 'Top Transactions', to: '/top-transactions', icon: TrendingUp },
-    { name: 'Top Users', to: '/top-users', icon: Trophy },
-  ];
-
-  const content = (
+  return (
     <div className="flex flex-col h-full bg-white border-r border-slate-200">
       {/* Brand Header */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
@@ -70,13 +77,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 focus-ring"
-          aria-label="Close sidebar"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 focus-ring"
+            aria-label="Close sidebar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -115,17 +124,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       </nav>
 
       {/* Authenticated User & Popup Menu */}
-      <div className="p-3.5 border-t border-slate-100 bg-slate-50/60 relative" ref={menuRef}>
+      <div className="p-3.5 border-t border-slate-100 bg-slate-50/60 relative" ref={footerRef}>
         {/* Popup Menu (Change Password / Change Biodata) */}
         {isMenuOpen && (
-          <div className="absolute bottom-full left-3.5 right-3.5 mb-2.5 bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute bottom-full left-3.5 right-3.5 mb-2.5 bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
+          >
             <button
               type="button"
               onClick={() => {
                 setIsMenuOpen(false);
-                setIsChangePasswordOpen(true);
+                onOpenChangePassword();
               }}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-navy-900 bg-indigo-50/70 hover:bg-indigo-100/80 transition-colors text-left group"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-navy-900 bg-indigo-50/70 hover:bg-indigo-100/80 transition-colors text-left group cursor-pointer"
             >
               <Lock className="w-4 h-4 text-navy-800 stroke-[2.2]" />
               <span>Change Password</span>
@@ -137,9 +149,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               type="button"
               onClick={() => {
                 setIsMenuOpen(false);
-                setIsChangeBiodataOpen(true);
+                onOpenChangeBiodata();
               }}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-navy-900 hover:bg-slate-50 transition-colors text-left group"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-navy-900 hover:bg-slate-50 transition-colors text-left group cursor-pointer"
             >
               <UserPen className="w-4 h-4 text-navy-800 stroke-[2.2]" />
               <span>Change Biodata</span>
@@ -151,11 +163,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between gap-2.5 p-2 rounded-2xl bg-white border border-slate-200/80 shadow-xs">
           <button
             type="button"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center gap-2.5 min-w-0 flex-1 text-left hover:opacity-90 transition-opacity focus-ring rounded-xl p-1 -m-1"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className="flex items-center gap-2.5 min-w-0 flex-1 text-left hover:opacity-90 transition-opacity focus-ring rounded-xl p-1 -m-1 cursor-pointer"
             title="Account options"
           >
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0 select-none">
               {user?.username ? user.username.slice(0, 2).toUpperCase() : 'AD'}
             </div>
             <div className="min-w-0 flex-1">
@@ -178,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <button
             onClick={logout}
             title="Log out of session"
-            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors focus-ring shrink-0"
+            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors focus-ring shrink-0 cursor-pointer"
             aria-label="Log out"
           >
             <LogOut className="w-4 h-4 stroke-[2]" />
@@ -187,12 +200,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       </div>
     </div>
   );
+};
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { user } = useAuth();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isChangeBiodataOpen, setIsChangeBiodataOpen] = useState(false);
 
   return (
     <>
       {/* Desktop Persistent Sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 z-30">
-        {content}
+        <SidebarContent
+          onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+          onOpenChangeBiodata={() => setIsChangeBiodataOpen(true)}
+        />
       </aside>
 
       {/* Mobile Backdrop & Drawer */}
@@ -210,7 +232,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {content}
+        <SidebarContent
+          onClose={onClose}
+          onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+          onOpenChangeBiodata={() => setIsChangeBiodataOpen(true)}
+        />
       </div>
 
       {/* Modals */}
