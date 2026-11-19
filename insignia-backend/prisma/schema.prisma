@@ -8,11 +8,18 @@ datasource db {
 }
 
 model Admin {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  id          String   @id @default(uuid())
+  username    String   @unique
+  password    String
+  fullName    String?
+  email       String?
+  phone       String?
+  dateOfBirth String?
+  gender      String?  @default("Male")
+  address     String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("admins")
 }

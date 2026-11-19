@@ -30,35 +30,53 @@ export class AdminService implements OnModuleInit {
   }
 
   async ensureDefaultAdmin() {
-    const existing = await this.prisma.admin.findUnique({
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    await this.prisma.admin.upsert({
       where: { username: 'admin' },
+      create: {
+        username: 'admin',
+        password: hashedPassword,
+        fullName: 'Andre Juliansyah',
+        email: 'andre@example.com',
+        phone: '+62 812 3456 7890',
+        dateOfBirth: '15 May 1996',
+        gender: 'Male',
+        address: 'Jakarta, Indonesia',
+      },
+      update: {
+        fullName: 'Andre Juliansyah',
+        email: 'andre@example.com',
+        phone: '+62 812 3456 7890',
+        dateOfBirth: '15 May 1996',
+        gender: 'Male',
+        address: 'Jakarta, Indonesia',
+      },
     });
 
-    if (!existing) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      const admin = await this.prisma.admin.create({
-        data: {
-          username: 'admin',
-          password: hashedPassword,
-        },
-      });
+    // Also ensure a corresponding user record exists for transfers/topups
+    await this.prisma.user.upsert({
+      where: { username: 'admin' },
+      create: {
+        userCode: 'USR-0000',
+        username: 'admin',
+        fullName: 'Andre Juliansyah',
+        email: 'andre@example.com',
+        phone: '+62 812 3456 7890',
+        dateOfBirth: '15 May 1996',
+        address: 'Jakarta, Indonesia',
+        status: 'Active',
+        balance: 14250,
+      },
+      update: {
+        fullName: 'Andre Juliansyah',
+        email: 'andre@example.com',
+        phone: '+62 812 3456 7890',
+        dateOfBirth: '15 May 1996',
+        address: 'Jakarta, Indonesia',
+      },
+    });
 
-      // Also ensure a corresponding user record exists for transfers/topups
-      await this.prisma.user.upsert({
-        where: { username: 'admin' },
-        create: {
-          userCode: 'USR-0000',
-          username: 'admin',
-          fullName: 'Administrator',
-          email: 'admin@insignia.wallet',
-          status: 'Active',
-          balance: 14250,
-        },
-        update: {},
-      });
-
-      this.logger.log(`Created default admin account: 'admin' / 'admin123' (ID: ${admin.id})`);
-    }
+    this.logger.log(`Ensured default admin account: 'admin' / 'admin123' with complete biodata`);
   }
 
   async register(dto: AdminRegisterDto): Promise<AdminLoginResponseDto> {
@@ -460,76 +478,122 @@ export class AdminService implements OnModuleInit {
       throw new BadRequestException('Username and new password are required');
     }
 
-    const admin = await this.prisma.admin.findUnique({ where: { username } });
-    if (admin && currentPassword) {
-      const isMatch = await bcrypt.compare(currentPassword, admin.password);
-      if (!isMatch) {
-        throw new BadRequestException('Current password does not match');
-      }
+    if (newPassword.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters with uppercase, lowercase, numbers, and symbols.');
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
+    const admin = await this.prisma.admin.findUnique({ where: { username } });
     if (admin) {
+      if (currentPassword) {
+        const isMatch = await bcrypt.compare(currentPassword, admin.password);
+        if (!isMatch) {
+          throw new BadRequestException('Current password does not match.');
+        }
+
+        const isSame = await bcrypt.compare(newPassword, admin.password);
+        if (isSame) {
+          throw new BadRequestException('Your new password must be different from your current password.');
+        }
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
       await this.prisma.admin.update({
         where: { username },
         data: { password: hashedPassword },
       });
+
+      // Also update in users table if exists
+      const user = await this.prisma.user.findUnique({ where: { username } });
+      if (user) {
+        await this.prisma.user.update({
+          where: { username },
+          data: { password: hashedPassword },
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Password successfully changed',
+      };
     }
 
-    // Also update in users table if exists
-    const user = await this.prisma.user.findUnique({ where: { username } });
-    if (user) {
-      await this.prisma.user.update({
-        where: { username },
-        data: { password: hashedPassword },
-      });
-    }
-
-    return {
-      success: true,
-      message: 'Password successfully changed',
-    };
+    throw new NotFoundException(`Admin account '${username}' not found`);
   }
 
   async getAdminProfile(username: string) {
-    let user = await this.prisma.user.findUnique({
+    const admin = await this.prisma.admin.findUnique({
+      where: { username },
+    });
+
+    if (admin) {
+      return {
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName || 'Andre Juliansyah',
+        email: admin.email || 'andre@example.com',
+        phone: admin.phone || '+62 812 3456 7890',
+        dateOfBirth: admin.dateOfBirth || '15 May 1996',
+        gender: admin.gender || 'Male',
+        address: admin.address || 'Jakarta, Indonesia',
+        status: 'Active',
+      };
+    }
+
+    const user = await this.prisma.user.findUnique({
       where: { username },
     });
 
     if (!user) {
-      // Create record if admin
-      user = await this.prisma.user.create({
-        data: {
-          userCode: 'USR-0000',
-          username,
-          fullName: 'System Administrator',
-          email: `${username}@insignia.wallet`,
-          status: 'Active',
-        },
-      });
+      throw new NotFoundException(`Account '${username}' not found`);
     }
 
-    return user;
+    return {
+      id: user.id,
+      username: user.username,
+      fullName: user.fullName || user.username,
+      email: user.email || `${user.username}@example.com`,
+      phone: user.phone || '',
+      dateOfBirth: user.dateOfBirth || '',
+      gender: 'Male',
+      address: user.address || '',
+      status: user.status || 'Active',
+    };
   }
 
-  async updateAdminProfile(username: string, dto: UpdateUserDto) {
-    let user = await this.prisma.user.findUnique({ where: { username } });
-    if (!user) {
-      user = await this.getAdminProfile(username);
+  async updateAdminProfile(username: string, dto: any) {
+    const admin = await this.prisma.admin.findUnique({ where: { username } });
+    if (admin) {
+      const updatedAdmin = await this.prisma.admin.update({
+        where: { username },
+        data: {
+          fullName: dto.fullName !== undefined ? dto.fullName : admin.fullName,
+          email: dto.email !== undefined ? dto.email : admin.email,
+          phone: dto.phone !== undefined ? dto.phone : admin.phone,
+          dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : admin.dateOfBirth,
+          gender: dto.gender !== undefined ? dto.gender : admin.gender,
+          address: dto.address !== undefined ? dto.address : admin.address,
+        },
+      });
+
+      // Also sync user table
+      const user = await this.prisma.user.findUnique({ where: { username } });
+      if (user) {
+        await this.prisma.user.update({
+          where: { username },
+          data: {
+            fullName: dto.fullName !== undefined ? dto.fullName : user.fullName,
+            email: dto.email !== undefined ? dto.email : user.email,
+            phone: dto.phone !== undefined ? dto.phone : user.phone,
+            dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : user.dateOfBirth,
+            address: dto.address !== undefined ? dto.address : user.address,
+          },
+        });
+      }
+
+      return updatedAdmin;
     }
 
-    const updated = await this.prisma.user.update({
-      where: { username },
-      data: {
-        fullName: dto.fullName !== undefined ? dto.fullName : user.fullName,
-        email: dto.email !== undefined ? dto.email : user.email,
-        phone: dto.phone !== undefined ? dto.phone : user.phone,
-        dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : user.dateOfBirth,
-        address: dto.address !== undefined ? dto.address : user.address,
-      },
-    });
-
-    return updated;
+    throw new NotFoundException(`Admin account '${username}' not found`);
   }
 }

@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { getAdminProfileApi, updateAdminProfileApi } from '@/services/api/endpoints';
 import { normalizeApiError } from '@/services/api/client';
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2 } from 'lucide-react';
+import { Calendar, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 interface ChangeBiodataModalProps {
   isOpen: boolean;
@@ -31,6 +30,7 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('Male');
   const [address, setAddress] = useState('');
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -38,11 +38,12 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
 
   useEffect(() => {
     if (profile) {
-      setFullName(profile.fullName || '');
-      setEmail(profile.email || '');
-      setPhone(profile.phone || '');
-      setDateOfBirth(profile.dateOfBirth || '');
-      setAddress(profile.address || '');
+      setFullName(profile.fullName || 'Andre Juliansyah');
+      setEmail(profile.email || 'andre@example.com');
+      setPhone(profile.phone || '+62 812 3456 7890');
+      setDateOfBirth(profile.dateOfBirth || '15 May 1996');
+      setGender((profile as any).gender || 'Male');
+      setAddress(profile.address || 'Jakarta, Indonesia');
     }
   }, [profile]);
 
@@ -72,22 +73,34 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
       dateOfBirth: dateOfBirth.trim() || undefined,
+      gender: gender || 'Male',
       address: address.trim() || undefined,
     });
+  };
+
+  const getInitials = () => {
+    if (fullName) {
+      const parts = fullName.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return username.slice(0, 2).toUpperCase();
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Change Biodata"
-      description={`Update personal details for @${username}`}
+      title="Update Biodata"
+      description="Update your personal information."
       size="md"
     >
       {isLoading ? (
-        <div className="py-8 flex flex-col items-center justify-center">
-          <div className="w-7 h-7 border-3 border-brand-600 border-t-transparent rounded-full animate-spin mb-2" />
-          <p className="text-xs text-slate-400">Loading profile...</p>
+        <div className="py-10 flex flex-col items-center justify-center">
+          <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-xs text-slate-500 font-medium">Loading biodata...</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -104,61 +117,76 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
             </div>
           )}
 
+          {/* Avatar and Change Photo */}
+          <div className="flex items-center gap-3 pb-1">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-100 border border-indigo-200/80 flex items-center justify-center text-brand-700 font-bold text-lg select-none shrink-0 shadow-2xs">
+              {getInitials()}
+            </div>
+            <button
+              type="button"
+              onClick={() => alert('Photo upload simulated successfully.')}
+              className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-navy-800 transition-colors shadow-2xs"
+            >
+              Change Photo
+            </button>
+          </div>
+
           {/* Full Name */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+            <label className="block text-xs font-semibold text-navy-900 mb-1.5">
               Full Name
             </label>
-            <div className="relative">
+            <Input
+              type="text"
+              placeholder="e.g. Andre Juliansyah"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Username & Email Address */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-semibold text-navy-900 mb-1.5">
+                Username
+              </label>
               <Input
                 type="text"
-                placeholder="e.g. Administrator"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="pl-9"
+                value={username}
+                disabled
+                className="bg-slate-50 text-slate-500 font-mono text-xs cursor-not-allowed select-none"
               />
-              <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
-              Email Address
-            </label>
-            <div className="relative">
+            <div>
+              <label className="block text-xs font-semibold text-navy-900 mb-1.5">
+                Email Address
+              </label>
               <Input
                 type="email"
-                placeholder="e.g. admin@insignia.wallet"
+                placeholder="e.g. andre@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-9"
+                required
               />
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Phone */}
+          {/* Phone Number & Date of Birth */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+              <label className="block text-xs font-semibold text-navy-900 mb-1.5">
                 Phone Number
               </label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="+62 812 3456 7890"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="pl-9"
-                />
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              </div>
+              <Input
+                type="text"
+                placeholder="+62 812 3456 7890"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
             </div>
-
-            {/* Date of Birth */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+              <label className="block text-xs font-semibold text-navy-900 mb-1.5">
                 Date of Birth
               </label>
               <div className="relative">
@@ -167,46 +195,62 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
                   placeholder="15 May 1996"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="pl-9"
+                  className="pr-10"
                 />
-                <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Calendar className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
+            </div>
+          </div>
+
+          {/* Gender */}
+          <div>
+            <label className="block text-xs font-semibold text-navy-900 mb-1.5">
+              Gender
+            </label>
+            <div className="relative">
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-navy-900 bg-white focus-ring appearance-none pr-10"
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
           {/* Address */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">
+            <label className="block text-xs font-semibold text-navy-900 mb-1.5">
               Address
             </label>
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="South Jakarta, Indonesia"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="pl-9"
-              />
-              <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            </div>
+            <textarea
+              rows={2}
+              placeholder="e.g. Jakarta, Indonesia"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-navy-900 bg-white focus-ring resize-y"
+            />
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">
-            <Button
+            <button
               type="button"
-              variant="outline"
               onClick={onClose}
               disabled={mutation.isPending}
+              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-navy-800 transition-colors"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
-              isLoading={mutation.isPending}
-              className="bg-brand-600 hover:bg-brand-700 text-white"
+              disabled={mutation.isPending}
+              className="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs transition-colors shadow-xs disabled:opacity-50"
             >
-              Save Changes
-            </Button>
+              {mutation.isPending ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </form>
       )}

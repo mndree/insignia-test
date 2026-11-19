@@ -7,6 +7,7 @@ export interface ModalProps {
   onClose: () => void;
   title: string;
   description?: string;
+  icon?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
@@ -17,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   description,
+  icon,
   children,
   footer,
   size = 'md',
@@ -64,13 +66,16 @@ export const Modal: React.FC<ModalProps> = ({
         )}
       >
         <div className="flex items-start justify-between p-5 border-b border-slate-100">
-          <div>
-            <h3 id="modal-title" className="text-lg font-semibold text-navy-900">
-              {title}
-            </h3>
-            {description && (
-              <p className="mt-1 text-sm text-slate-500">{description}</p>
-            )}
+          <div className="flex items-start gap-3.5">
+            {icon && <div className="shrink-0">{icon}</div>}
+            <div>
+              <h3 id="modal-title" className="text-lg font-bold text-navy-900 tracking-tight leading-snug">
+                {title}
+              </h3>
+              {description && (
+                <p className="mt-0.5 text-xs sm:text-sm text-slate-500">{description}</p>
+              )}
+            </div>
           </div>
           <button
             type="button"
