@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import type { User } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterUserDto } from './dto/register-user.dto.js';
 import { TopupDto } from './dto/topup.dto.js';
@@ -29,17 +30,39 @@ export class WalletService {
   ) {}
 
   async register(dto: RegisterUserDto): Promise<TokenResponseDto> {
+    const cleanUsername = dto.username.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({
-      where: { username: dto.username },
+      where: { username: cleanUsername },
     });
 
     if (existing) {
       throw new ConflictException(`Username '${dto.username}' already exists`);
     }
 
+    let hashedPassword: string | null = null;
+    if (dto.password && dto.password.trim()) {
+      hashedPassword = await bcrypt.hash(dto.password.trim(), 10);
+    }
+
+    // Generate unique USR-XXXX code
+    const totalUsers = await this.prisma.user.count();
+    let userCode = `USR-${String(totalUsers + 1).padStart(4, '0')}`;
+    const codeExists = await this.prisma.user.findUnique({ where: { userCode } });
+    if (codeExists) {
+      userCode = `USR-${Date.now().toString().slice(-4)}`;
+    }
+
     const user = await this.prisma.user.create({
       data: {
-        username: dto.username,
+        username: cleanUsername,
+        password: hashedPassword,
+        fullName: dto.fullName?.trim() || cleanUsername,
+        dateOfBirth: dto.dateOfBirth?.trim() || null,
+        email: dto.email?.trim() || `${cleanUsername}@example.com`,
+        phone: dto.phone?.trim() || null,
+        address: dto.address?.trim() || null,
+        userCode,
+        status: 'Active',
         balance: 0,
       },
     });

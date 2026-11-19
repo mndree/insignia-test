@@ -42,7 +42,7 @@ import { TransactionsQueryDto } from './dto/transactions-query.dto.js';
 export class WalletController {
   constructor(private readonly walletService: WalletService) { }
 
-  @Post('user')
+  @Post(['user', 'register'])
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({

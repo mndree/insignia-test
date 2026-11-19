@@ -187,12 +187,12 @@ export const LoginPage: React.FC = () => {
 
             <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-2.5 text-center text-xs text-slate-500">
               <div>
-                Need to register a wallet token?{' '}
+                Need to register a wallet?{' '}
                 <Link
                   to="/register"
                   className="font-semibold text-brand-600 hover:text-brand-700 underline inline-flex items-center gap-1"
                 >
-                  Documented POST /user flow
+                  Register Here!
                   <ExternalLink className="w-3 h-3" />
                 </Link>
               </div>

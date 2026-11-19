@@ -17,6 +17,12 @@ export interface AuthUser {
 
 export interface RegisterUserDto {
   username: string;
+  password?: string;
+  fullName?: string;
+  dateOfBirth?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
 }
 
 export interface TokenResponseDto {
