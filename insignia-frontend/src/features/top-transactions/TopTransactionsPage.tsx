@@ -23,8 +23,8 @@ export const TopTransactionsPage: React.FC = () => {
   const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
   const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
 
-  const [sortField, setSortField] = useState<string | null>('rank');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(null);
 
   const {
     data,
@@ -41,7 +41,15 @@ export const TopTransactionsPage: React.FC = () => {
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else if (sortOrder === 'desc') {
+        // Reset to default
+        setSortField(null);
+        setSortOrder(null);
+      } else {
+        setSortOrder('asc');
+      }
     } else {
       setSortField(field);
       setSortOrder('asc');

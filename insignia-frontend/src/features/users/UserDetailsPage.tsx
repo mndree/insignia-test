@@ -29,8 +29,8 @@ export const UserDetailsPage: React.FC = () => {
 
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [sortField, setSortField] = useState<string | null>('date');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(null);
 
   // 1. Fetch user details
   const {
@@ -55,7 +55,15 @@ export const UserDetailsPage: React.FC = () => {
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else if (sortOrder === 'desc') {
+        // Reset to default
+        setSortField(null);
+        setSortOrder(null);
+      } else {
+        setSortOrder('asc');
+      }
     } else {
       setSortField(field);
       setSortOrder('asc');
@@ -63,7 +71,7 @@ export const UserDetailsPage: React.FC = () => {
   };
 
   const sortedTransactions = useMemo(() => {
-    if (!sortField) return recentTransactions;
+    if (!sortField || !sortOrder) return recentTransactions;
     const list = [...recentTransactions];
     const isAsc = sortOrder === 'asc';
 

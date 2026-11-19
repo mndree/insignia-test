@@ -27,7 +27,7 @@ export const TransactionsPage: React.FC = () => {
   const dateFromParam = searchParams.get('dateFrom') || '';
   const dateToParam = searchParams.get('dateTo') || '';
   const sortByParam = searchParams.get('sortBy') || '';
-  const sortOrderParam = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+  const sortOrderParam = (searchParams.get('sortOrder') as 'asc' | 'desc') || null;
 
   // Local state for debounced search input
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -88,7 +88,15 @@ export const TransactionsPage: React.FC = () => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (sortByParam === field) {
-        next.set('sortOrder', sortOrderParam === 'asc' ? 'desc' : 'asc');
+        if (sortOrderParam === 'asc') {
+          next.set('sortOrder', 'desc');
+        } else if (sortOrderParam === 'desc') {
+          // Reset to default
+          next.delete('sortBy');
+          next.delete('sortOrder');
+        } else {
+          next.set('sortOrder', 'asc');
+        }
       } else {
         next.set('sortBy', field);
         next.set('sortOrder', 'asc');

@@ -24,7 +24,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 }) => {
   // Client-side sort fallback for instant responsiveness
   const sortedItems = React.useMemo(() => {
-    if (!currentSortField) return items;
+    if (!currentSortField || !currentSortOrder) return items;
     const list = [...items];
     const isAsc = currentSortOrder === 'asc';
 

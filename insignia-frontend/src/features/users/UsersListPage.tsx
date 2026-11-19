@@ -37,7 +37,7 @@ export const UsersListPage: React.FC = () => {
   const searchParam = searchParams.get('search') || '';
   const statusParam = searchParams.get('status') || 'All statuses';
   const sortByParam = searchParams.get('sortBy') || '';
-  const sortOrderParam = (searchParams.get('sortOrder') as SortOrder) || 'asc';
+  const sortOrderParam = (searchParams.get('sortOrder') as SortOrder) || null;
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -96,7 +96,15 @@ export const UsersListPage: React.FC = () => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (sortByParam === field) {
-        next.set('sortOrder', sortOrderParam === 'asc' ? 'desc' : 'asc');
+        if (sortOrderParam === 'asc') {
+          next.set('sortOrder', 'desc');
+        } else if (sortOrderParam === 'desc') {
+          // Reset to default (unsorted)
+          next.delete('sortBy');
+          next.delete('sortOrder');
+        } else {
+          next.set('sortOrder', 'asc');
+        }
       } else {
         next.set('sortBy', field);
         next.set('sortOrder', 'asc');

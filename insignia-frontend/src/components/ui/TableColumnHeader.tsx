@@ -30,7 +30,7 @@ export const TableColumnHeader: React.FC<TableColumnHeaderProps> = ({
     if (!isSorted) return `Sort by ${label} ascending`;
     return currentSortOrder === 'asc'
       ? `Sort by ${label} descending`
-      : `Sort by ${label} ascending`;
+      : `Reset ${label} sort to default`;
   };
 
   return (
