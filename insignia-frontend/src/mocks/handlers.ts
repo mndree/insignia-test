@@ -376,6 +376,29 @@ export const handlers = [
       }
     }
 
+    const sortBy = url.searchParams.get('sortBy') || '';
+    const sortOrder = url.searchParams.get('sortOrder') || 'desc';
+    if (sortBy) {
+      const isAsc = sortOrder === 'asc';
+      filtered.sort((a, b) => {
+        let cmp = 0;
+        if (sortBy === 'id') {
+          cmp = a.id.localeCompare(b.id);
+        } else if (sortBy === 'username' || sortBy === 'counterparty') {
+          cmp = a.username.localeCompare(b.username);
+        } else if (sortBy === 'direction') {
+          const dirA = a.amount > 0 ? 'incoming' : 'outgoing';
+          const dirB = b.amount > 0 ? 'incoming' : 'outgoing';
+          cmp = dirA.localeCompare(dirB);
+        } else if (sortBy === 'amount') {
+          cmp = a.amount - b.amount;
+        } else if (sortBy === 'created_at' || sortBy === 'date') {
+          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        return isAsc ? cmp : -cmp;
+      });
+    }
+
     const total = filtered.length;
     const startIndex = (page - 1) * pageSize;
     const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
@@ -415,6 +438,27 @@ export const handlers = [
 
     if (status && status !== 'All statuses') {
       filtered = filtered.filter((u) => u.status.toLowerCase() === status.toLowerCase());
+    }
+
+    const sortBy = url.searchParams.get('sortBy') || '';
+    const sortOrder = url.searchParams.get('sortOrder') || 'asc';
+    if (sortBy) {
+      const isAsc = sortOrder === 'asc';
+      filtered.sort((a, b) => {
+        let cmp = 0;
+        if (sortBy === 'user') {
+          cmp = (a.fullName || a.username).localeCompare(b.fullName || b.username);
+        } else if (sortBy === 'email') {
+          cmp = (a.email || '').localeCompare(b.email || '');
+        } else if (sortBy === 'balance') {
+          cmp = a.balance - b.balance;
+        } else if (sortBy === 'status') {
+          cmp = a.status.localeCompare(b.status);
+        } else if (sortBy === 'joinedDate') {
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        }
+        return isAsc ? cmp : -cmp;
+      });
     }
 
     const total = filtered.length;

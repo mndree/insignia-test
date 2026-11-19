@@ -320,6 +320,32 @@ export class WalletService {
       }
     }
 
+    if (query.sortBy) {
+      const field = query.sortBy.toLowerCase();
+      const isAsc = query.sortOrder === 'asc';
+      filtered.sort((a, b) => {
+        let cmp = 0;
+        if (field === 'id') {
+          cmp = a.id.localeCompare(b.id);
+        } else if (field === 'username' || field === 'counterparty') {
+          cmp = a.username.localeCompare(b.username);
+        } else if (field === 'amount') {
+          cmp = a.amount - b.amount;
+        } else if (field === 'direction') {
+          const dirA = a.amount > 0 ? 'incoming' : 'outgoing';
+          const dirB = b.amount > 0 ? 'incoming' : 'outgoing';
+          cmp = dirA.localeCompare(dirB);
+        } else if (field === 'created_at' || field === 'date' || field === 'createdat') {
+          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        } else if (field === 'description') {
+          cmp = (a.description || '').localeCompare(b.description || '');
+        }
+        return isAsc ? cmp : -cmp;
+      });
+    } else if (query.sortOrder === 'asc') {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+
     const total = filtered.length;
     const skip = (page - 1) * pageSize;
     const items = filtered.slice(skip, skip + pageSize);

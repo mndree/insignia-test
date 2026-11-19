@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, Link, useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getUserDetailsApi, getUsersListApi } from '@/services/api/endpoints';
@@ -8,6 +8,7 @@ import { TransferBalanceModal } from './TransferBalanceModal';
 import { EditProfileModal } from './EditProfileModal';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
 import { formatNumber, formatShortDate } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
 import {
@@ -28,6 +29,8 @@ export const UserDetailsPage: React.FC = () => {
 
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [sortField, setSortField] = useState<string | null>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // 1. Fetch user details
   const {
@@ -47,6 +50,41 @@ export const UserDetailsPage: React.FC = () => {
     queryKey: ['admin_users_all'],
     queryFn: () => getUsersListApi({ pageSize: 50 }),
   });
+
+  const recentTransactions = user?.recentTransactions ?? [];
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedTransactions = useMemo(() => {
+    if (!sortField) return recentTransactions;
+    const list = [...recentTransactions];
+    const isAsc = sortOrder === 'asc';
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortField === 'id') {
+        cmp = a.id.localeCompare(b.id);
+      } else if (sortField === 'counterparty') {
+        cmp = a.counterparty.localeCompare(b.counterparty);
+      } else if (sortField === 'direction') {
+        cmp = a.direction.localeCompare(b.direction);
+      } else if (sortField === 'amount') {
+        cmp = a.amount - b.amount;
+      } else if (sortField === 'date') {
+        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return isAsc ? cmp : -cmp;
+    });
+
+    return list;
+  }, [recentTransactions, sortField, sortOrder]);
 
   if (isLoading) {
     return (
@@ -74,7 +112,7 @@ export const UserDetailsPage: React.FC = () => {
     );
   }
 
-  const { stats, recentTransactions } = user;
+  const { stats } = user;
 
   return (
     <div className="space-y-6">
@@ -274,9 +312,14 @@ export const UserDetailsPage: React.FC = () => {
       {/* Bottom Section: RECENT TRANSACTIONS Card */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-navy-700">
-            Recent Transactions
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-navy-700">
+              Recent Transactions
+            </h3>
+            <span className="text-xs text-slate-400 font-medium">
+              ({sortedTransactions.length} items appearing)
+            </span>
+          </div>
           <Link
             to={`/transactions?search=${user.username}`}
             className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
@@ -295,15 +338,47 @@ export const UserDetailsPage: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th scope="col" className="py-3 px-4 sm:px-6">ID</th>
-                  <th scope="col" className="py-3 px-4 sm:px-6">Counterparty</th>
-                  <th scope="col" className="py-3 px-4 sm:px-6">Direction</th>
-                  <th scope="col" className="py-3 px-4 sm:px-6 text-right">Amount</th>
-                  <th scope="col" className="py-3 px-4 sm:px-6 text-right">Date</th>
+                  <TableColumnHeader
+                    label="ID"
+                    field="id"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Counterparty"
+                    field="counterparty"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Direction"
+                    field="direction"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Amount"
+                    field="amount"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                    align="right"
+                  />
+                  <TableColumnHeader
+                    label="Date"
+                    field="date"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                    align="right"
+                  />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {recentTransactions.map((txn) => {
+                {sortedTransactions.map((txn) => {
                   const isIncoming = txn.direction === 'incoming';
                   return (
                     <tr key={txn.id} className="hover:bg-slate-50/60 transition-colors">

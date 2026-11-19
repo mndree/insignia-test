@@ -26,6 +26,8 @@ export const TransactionsPage: React.FC = () => {
   const directionParam = (searchParams.get('direction') as TransactionDirection) || 'all';
   const dateFromParam = searchParams.get('dateFrom') || '';
   const dateToParam = searchParams.get('dateTo') || '';
+  const sortByParam = searchParams.get('sortBy') || '';
+  const sortOrderParam = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
 
   // Local state for debounced search input
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -82,6 +84,20 @@ export const TransactionsPage: React.FC = () => {
     });
   };
 
+  const handleSort = (field: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (sortByParam === field) {
+        next.set('sortOrder', sortOrderParam === 'asc' ? 'desc' : 'asc');
+      } else {
+        next.set('sortBy', field);
+        next.set('sortOrder', 'asc');
+      }
+      next.set('page', '1');
+      return next;
+    });
+  };
+
   const handleClearFilters = () => {
     setSearchInput('');
     setSearchParams({
@@ -109,6 +125,8 @@ export const TransactionsPage: React.FC = () => {
         direction: directionParam,
         dateFrom: dateFromParam,
         dateTo: dateToParam,
+        sortBy: sortByParam,
+        sortOrder: sortOrderParam,
       },
     ],
     queryFn: () =>
@@ -119,6 +137,8 @@ export const TransactionsPage: React.FC = () => {
         direction: directionParam !== 'all' ? directionParam : undefined,
         dateFrom: dateFromParam || undefined,
         dateTo: dateToParam || undefined,
+        sortBy: sortByParam || undefined,
+        sortOrder: sortOrderParam || undefined,
       }),
     enabled: isConfigured,
   });
@@ -201,7 +221,11 @@ export const TransactionsPage: React.FC = () => {
           {/* Transactions Table */}
           <TransactionTable
             items={data?.items || []}
+            totalCount={data?.total}
             isLoading={isLoading}
+            currentSortField={sortByParam}
+            currentSortOrder={sortOrderParam}
+            onSort={handleSort}
           />
 
           {/* Pagination Controls */}

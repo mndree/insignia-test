@@ -8,6 +8,8 @@ import { StatusBadge } from './StatusBadge';
 import { DemoBadge } from '@/components/ui/DemoBadge';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
+import { TablePageSizeSelector } from '@/components/ui/TablePageSizeSelector';
 import { formatNumber, formatDateTime } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
 import {
@@ -34,6 +36,8 @@ export const UsersListPage: React.FC = () => {
   const pageSizeParam = parseInt(searchParams.get('pageSize') || '6', 10);
   const searchParam = searchParams.get('search') || '';
   const statusParam = searchParams.get('status') || 'All statuses';
+  const sortByParam = searchParams.get('sortBy') || '';
+  const sortOrderParam = (searchParams.get('sortOrder') as SortOrder) || 'asc';
 
   const [searchInput, setSearchInput] = useState(searchParam);
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -79,6 +83,29 @@ export const UsersListPage: React.FC = () => {
     });
   };
 
+  const handlePageSizeChange = (newSize: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('pageSize', newSize.toString());
+      next.set('page', '1');
+      return next;
+    });
+  };
+
+  const handleSort = (field: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (sortByParam === field) {
+        next.set('sortOrder', sortOrderParam === 'asc' ? 'desc' : 'asc');
+      } else {
+        next.set('sortBy', field);
+        next.set('sortOrder', 'asc');
+      }
+      next.set('page', '1');
+      return next;
+    });
+  };
+
   // Fetch users list and stats
   const {
     data,
@@ -94,6 +121,8 @@ export const UsersListPage: React.FC = () => {
         pageSize: pageSizeParam,
         search: searchParam,
         status: statusParam,
+        sortBy: sortByParam,
+        sortOrder: sortOrderParam,
       },
     ],
     queryFn: () =>
@@ -102,6 +131,8 @@ export const UsersListPage: React.FC = () => {
         pageSize: pageSizeParam,
         search: searchParam || undefined,
         status: statusParam !== 'All statuses' ? statusParam : undefined,
+        sortBy: sortByParam || undefined,
+        sortOrder: (sortOrderParam as 'asc' | 'desc') || undefined,
       }),
   });
 
@@ -112,6 +143,33 @@ export const UsersListPage: React.FC = () => {
     activeUsers: 116,
     totalWalletBalance: 845250,
   };
+
+  // In-memory sort fallback for instant UI response and smooth client-side interaction
+  const sortedItems = React.useMemo(() => {
+    if (!sortByParam) return items;
+    const list = [...items];
+    const isAsc = sortOrderParam === 'asc';
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortByParam === 'user') {
+        const nameA = a.fullName || a.username;
+        const nameB = b.fullName || b.username;
+        cmp = nameA.localeCompare(nameB);
+      } else if (sortByParam === 'email') {
+        cmp = (a.email || '').localeCompare(b.email || '');
+      } else if (sortByParam === 'balance') {
+        cmp = a.balance - b.balance;
+      } else if (sortByParam === 'status') {
+        cmp = a.status.localeCompare(b.status);
+      } else if (sortByParam === 'joinedDate') {
+        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return isAsc ? cmp : -cmp;
+    });
+
+    return list;
+  }, [items, sortByParam, sortOrderParam]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSizeParam));
   const startItem = total === 0 ? 0 : (pageParam - 1) * pageSizeParam + 1;
@@ -318,16 +376,48 @@ export const UsersListPage: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th scope="col" className="py-3.5 px-4 sm:px-6">User</th>
-                  <th scope="col" className="py-3.5 px-4 sm:px-6">Email</th>
-                  <th scope="col" className="py-3.5 px-4 sm:px-6">Wallet Balance</th>
-                  <th scope="col" className="py-3.5 px-4 sm:px-6">Status</th>
-                  <th scope="col" className="py-3.5 px-4 sm:px-6">Joined Date</th>
-                  <th scope="col" className="py-3.5 px-4 sm:px-6 text-right">Action</th>
+                  <TableColumnHeader
+                    label="User"
+                    field="user"
+                    currentSortField={sortByParam}
+                    currentSortOrder={sortOrderParam}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Email"
+                    field="email"
+                    currentSortField={sortByParam}
+                    currentSortOrder={sortOrderParam}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Wallet Balance"
+                    field="balance"
+                    currentSortField={sortByParam}
+                    currentSortOrder={sortOrderParam}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Status"
+                    field="status"
+                    currentSortField={sortByParam}
+                    currentSortOrder={sortOrderParam}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Joined Date"
+                    field="joinedDate"
+                    currentSortField={sortByParam}
+                    currentSortOrder={sortOrderParam}
+                    onSort={handleSort}
+                  />
+                  <th scope="col" className="py-3.5 px-4 sm:px-6 text-right select-none font-semibold text-[11px] uppercase tracking-wider text-slate-500">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {items.map((user) => (
+                {sortedItems.map((user) => (
                   <tr
                     key={user.id}
                     className="hover:bg-slate-50/60 transition-colors"
@@ -387,11 +477,22 @@ export const UsersListPage: React.FC = () => {
           </div>
         )}
 
-        {/* Footer / Pagination */}
+        {/* Footer / Pagination & Data Size Control */}
         <div className="p-4 bg-slate-50/60 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div>
-            Showing <span className="font-semibold text-navy-900">{startItem}–{endItem}</span> of{' '}
-            <span className="font-semibold text-navy-900">{total}</span> users
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              Showing <span className="font-semibold text-navy-900">{startItem}–{endItem}</span> of{' '}
+              <span className="font-semibold text-navy-900">{total}</span> users{' '}
+              <span className="text-slate-400 font-medium">({items.length} shown on this page)</span>
+            </div>
+
+            <span className="text-slate-300 hidden sm:inline">•</span>
+
+            <TablePageSizeSelector
+              pageSize={pageSizeParam}
+              onPageSizeChange={handlePageSizeChange}
+              options={[6, 10, 25, 50, 100]}
+            />
           </div>
 
           <div className="flex items-center gap-1.5">

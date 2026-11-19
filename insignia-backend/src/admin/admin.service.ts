@@ -217,12 +217,32 @@ export class AdminService implements OnModuleInit {
       username: { not: 'admin' },
     };
 
+    const orderDirection: Prisma.SortOrder = query.sortOrder === 'desc' ? 'desc' : 'asc';
+    let orderBy: Prisma.UserOrderByWithRelationInput[] = [{ userCode: 'asc' }, { createdAt: 'desc' }];
+
+    if (query.sortBy) {
+      const field = query.sortBy.toLowerCase();
+      if (field === 'user' || field === 'name' || field === 'fullname') {
+        orderBy = [{ fullName: orderDirection }, { username: orderDirection }];
+      } else if (field === 'email') {
+        orderBy = [{ email: orderDirection }];
+      } else if (field === 'balance') {
+        orderBy = [{ balance: orderDirection }];
+      } else if (field === 'status') {
+        orderBy = [{ status: orderDirection }];
+      } else if (field === 'createdat' || field === 'joineddate' || field === 'date') {
+        orderBy = [{ createdAt: orderDirection }];
+      } else if (field === 'usercode') {
+        orderBy = [{ userCode: orderDirection }];
+      }
+    }
+
     const [items, total, totalUsers, activeUsers, balanceAggregate] = await Promise.all([
       this.prisma.user.findMany({
         where,
         skip,
         take: pageSize,
-        orderBy: [{ userCode: 'asc' }, { createdAt: 'desc' }],
+        orderBy,
       }),
       this.prisma.user.count({ where }),
       this.prisma.user.count({ where: baseWhere }),

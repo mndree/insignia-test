@@ -79,6 +79,8 @@ export interface TransactionsQueryDto {
   direction?: TransactionDirection;
   dateFrom?: string;
   dateTo?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface TransactionRecordDto {
@@ -126,6 +128,8 @@ export interface UsersQueryFilters {
   pageSize?: number;
   search?: string;
   status?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface UsersListResponseDto {
