@@ -536,6 +536,7 @@ export class AdminService implements OnModuleInit {
         dateOfBirth: admin.dateOfBirth || '15 May 1996',
         gender: admin.gender || 'Male',
         address: admin.address || 'Jakarta, Indonesia',
+        avatarUrl: admin.avatarUrl || null,
         status: 'Active',
       };
     }
@@ -557,6 +558,7 @@ export class AdminService implements OnModuleInit {
       dateOfBirth: user.dateOfBirth || '',
       gender: 'Male',
       address: user.address || '',
+      avatarUrl: (user as any).avatarUrl || null,
       status: user.status || 'Active',
     };
   }
@@ -573,6 +575,7 @@ export class AdminService implements OnModuleInit {
           dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : admin.dateOfBirth,
           gender: dto.gender !== undefined ? dto.gender : admin.gender,
           address: dto.address !== undefined ? dto.address : admin.address,
+          avatarUrl: dto.avatarUrl !== undefined ? (dto.avatarUrl || null) : admin.avatarUrl,
         },
       });
 

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/useAuth';
+import { getAdminProfileApi } from '@/services/api/endpoints';
 import {
   LayoutDashboard,
   Users,
@@ -46,6 +48,12 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const footerRef = useRef<HTMLDivElement>(null);
+
+  const { data: adminProfile } = useQuery({
+    queryKey: ['admin_profile', user?.username || 'admin'],
+    queryFn: () => getAdminProfileApi(user?.username || 'admin'),
+    staleTime: 1000 * 60 * 5,
+  });
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -168,8 +176,16 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             className="flex items-center gap-2.5 min-w-0 flex-1 text-left hover:opacity-90 transition-opacity focus-ring rounded-xl p-1 -m-1 cursor-pointer"
             title="Account options"
           >
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0 select-none">
-              {user?.username ? user.username.slice(0, 2).toUpperCase() : 'AD'}
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0 select-none overflow-hidden">
+              {(adminProfile as any)?.avatarUrl ? (
+                <img
+                  src={(adminProfile as any).avatarUrl}
+                  alt="Avatar"
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              ) : (
+                user?.username ? user.username.slice(0, 2).toUpperCase() : 'AD'
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">

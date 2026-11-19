@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
@@ -21,6 +21,7 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
   username,
 }) => {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['admin_profile', username],
@@ -34,6 +35,7 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('Male');
   const [address, setAddress] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -46,8 +48,55 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
       setDateOfBirth(profile.dateOfBirth || '15 May 1996');
       setGender((profile as any).gender || 'Male');
       setAddress(profile.address || 'Jakarta, Indonesia');
+      setAvatarUrl((profile as any).avatarUrl || null);
     }
   }, [profile]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('Photo file size must be less than 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.88);
+          setAvatarUrl(compressed);
+        } else {
+          setAvatarUrl(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const mutation = useMutation({
     mutationFn: (data: any) => updateAdminProfileApi(username, data),
@@ -77,6 +126,7 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
       dateOfBirth: dateOfBirth.trim() || undefined,
       gender: gender || 'Male',
       address: address.trim() || undefined,
+      avatarUrl: avatarUrl !== null && avatarUrl !== undefined ? avatarUrl : '',
     });
   };
 
@@ -121,16 +171,45 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
 
           {/* Avatar and Change Photo */}
           <div className="flex items-center gap-3 pb-1">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-100 border border-indigo-200/80 flex items-center justify-center text-brand-700 font-bold text-lg select-none shrink-0 shadow-2xs">
-              {getInitials()}
+            <div className="w-14 h-14 rounded-2xl bg-indigo-100 border border-indigo-200/80 flex items-center justify-center text-brand-700 font-bold text-lg select-none shrink-0 shadow-2xs overflow-hidden">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar Preview"
+                  className="w-full h-full object-cover rounded-2xl"
+                />
+              ) : (
+                getInitials()
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => alert('Photo upload simulated successfully.')}
-              className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-navy-800 transition-colors shadow-2xs"
-            >
-              Change Photo
-            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-navy-800 transition-colors shadow-2xs cursor-pointer"
+              >
+                Change Photo
+              </button>
+
+              {avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl(null)}
+                  className="text-xs font-medium text-slate-400 hover:text-rose-600 transition-colors px-2 py-1"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Full Name */}

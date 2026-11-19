@@ -696,6 +696,7 @@ export const handlers = [
       phone: user?.phone || '+62 812 3456 7890',
       dateOfBirth: user?.dateOfBirth || '15 May 1996',
       address: user?.address || 'Jakarta, Indonesia',
+      avatarUrl: (user as any)?.avatarUrl || null,
       status: 'Active',
       balance: user?.balance || 24500,
     });
@@ -713,6 +714,7 @@ export const handlers = [
         if (body.phone !== undefined) user.phone = body.phone;
         if (body.dateOfBirth !== undefined) user.dateOfBirth = body.dateOfBirth;
         if (body.address !== undefined) user.address = body.address;
+        if (body.avatarUrl !== undefined) (user as any).avatarUrl = body.avatarUrl || null;
       }
       return HttpResponse.json({
         success: true,
