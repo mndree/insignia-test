@@ -4,10 +4,12 @@ import { UserDetailsResponseDto, UpdateUserProfileDto } from '@/types';
 import { updateUserProfileApi } from '@/services/api/endpoints';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { DatePickerInput } from '@/components/ui/DatePickerInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2 } from 'lucide-react';
+import { formatPhoneNumber } from '@/utils/masking';
+import { User, Mail, Phone, MapPin, CheckCircle2 } from 'lucide-react';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -24,7 +26,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
   const [fullName, setFullName] = useState(user.fullName || '');
   const [email, setEmail] = useState(user.email || '');
-  const [phone, setPhone] = useState(user.phone || '');
+  const [phone, setPhone] = useState(formatPhoneNumber(user.phone || ''));
   const [dateOfBirth, setDateOfBirth] = useState(user.dateOfBirth || '');
   const [address, setAddress] = useState(user.address || '');
   const [status, setStatus] = useState<'Active' | 'Inactive'>(user.status || 'Active');
@@ -110,18 +112,18 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           <Input
             label="Phone"
             type="text"
+            placeholder="+62 812 3456 7890"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
             leftIcon={<Phone className="w-4 h-4" />}
             disabled={mutation.isPending}
           />
 
-          <Input
+          <DatePickerInput
             label="Date of Birth"
-            type="text"
             value={dateOfBirth}
-            onChange={(e) => setDateOfBirth(e.target.value)}
-            leftIcon={<Calendar className="w-4 h-4" />}
+            onChange={setDateOfBirth}
+            placeholder="15 May 1996"
             disabled={mutation.isPending}
           />
         </div>

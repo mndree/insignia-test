@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { DatePickerInput } from '@/components/ui/DatePickerInput';
 import { Alert } from '@/components/ui/Alert';
 import { getAdminProfileApi, updateAdminProfileApi } from '@/services/api/endpoints';
 import { normalizeApiError } from '@/services/api/client';
-import { Calendar, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { formatPhoneNumber } from '@/utils/masking';
+import { ChevronDown, CheckCircle2 } from 'lucide-react';
 
 interface ChangeBiodataModalProps {
   isOpen: boolean;
@@ -40,7 +42,7 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
     if (profile) {
       setFullName(profile.fullName || 'Andre Juliansyah');
       setEmail(profile.email || 'andre@example.com');
-      setPhone(profile.phone || '+62 812 3456 7890');
+      setPhone(formatPhoneNumber(profile.phone || '+62 812 3456 7890'));
       setDateOfBirth(profile.dateOfBirth || '15 May 1996');
       setGender((profile as any).gender || 'Male');
       setAddress(profile.address || 'Jakarta, Indonesia');
@@ -182,23 +184,16 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
                 type="text"
                 placeholder="+62 812 3456 7890"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-navy-900 mb-1.5">
-                Date of Birth
-              </label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="15 May 1996"
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="pr-10"
-                />
-                <Calendar className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <DatePickerInput
+                label="Date of Birth"
+                value={dateOfBirth}
+                onChange={setDateOfBirth}
+                placeholder="15 May 1996"
+              />
             </div>
           </div>
 
