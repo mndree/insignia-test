@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Alert } from '@/components/ui/Alert';
 import { DemoBadge } from '@/components/ui/DemoBadge';
 import { APP_CONFIG } from '@/app/config';
-import { Wallet, Eye, EyeOff, Lock, User, KeyRound, Info, ExternalLink } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, KeyRound, Info, ExternalLink } from 'lucide-react';
 import { normalizeApiError } from '@/services/api/client';
 
 export const LoginPage: React.FC = () => {
@@ -70,9 +70,11 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center mb-3">
-          <div className="w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center text-white shadow-md">
-            <Wallet className="w-8 h-8" />
-          </div>
+          <img
+            src="/favicon.png"
+            alt="Insignia Wallet"
+            className="w-14 h-14 rounded-2xl object-contain shadow-md select-none"
+          />
         </div>
         <h2 className="text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-navy-900">
           Insignia Wallet
@@ -185,12 +187,12 @@ export const LoginPage: React.FC = () => {
 
             <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-2.5 text-center text-xs text-slate-500">
               <div>
-                Need to register a wallet token?{' '}
+                Need to register a wallet?{' '}
                 <Link
                   to="/register"
                   className="font-semibold text-brand-600 hover:text-brand-700 underline inline-flex items-center gap-1"
                 >
-                  Documented POST /user flow
+                  Register Here!
                   <ExternalLink className="w-3 h-3" />
                 </Link>
               </div>

@@ -23,6 +23,29 @@ export const registerWalletSchema = z.object({
 
 export type RegisterWalletFormData = z.infer<typeof registerWalletSchema>;
 
+export const registerUserSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .max(50, 'Username must be at most 50 characters')
+      .regex(/^[a-zA-Z0-9_-]+$/, 'Username may only contain letters, numbers, underscores, and hyphens')
+      .trim(),
+    password: z.string().min(8, 'Use at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    fullName: z.string().optional(),
+    dateOfBirth: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export type RegisterUserFormData = z.infer<typeof registerUserSchema>;
+
 export const topupSchema = z.object({
   amount: z
     .number({ invalid_type_error: 'Amount must be a valid number' })
