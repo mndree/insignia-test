@@ -30,11 +30,14 @@ export const Pagination: React.FC<PaginationProps> = ({
       className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 px-1 text-sm text-slate-600 ${className}`}
       aria-label="Pagination Navigation"
     >
-      <div className="flex items-center gap-4 text-xs sm:text-sm">
+      <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
         <span>
           Showing <span className="font-semibold text-navy-900">{startItem}</span> to{' '}
           <span className="font-semibold text-navy-900">{endItem}</span> of{' '}
-          <span className="font-semibold text-navy-900">{totalItems}</span> results
+          <span className="font-semibold text-navy-900">{totalItems}</span> results{' '}
+          <span className="text-slate-400 font-medium">
+            ({totalItems === 0 ? 0 : endItem - startItem + 1} on this page)
+          </span>
         </span>
 
         <div className="flex items-center gap-1.5">
