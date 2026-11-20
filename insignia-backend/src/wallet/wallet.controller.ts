@@ -3,6 +3,8 @@ import {
   Get,
   Post,
   Body,
+  Query,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -26,7 +28,9 @@ import {
   BalanceResponseDto,
   TransactionItemDto,
   TopUserItemDto,
+  PaginatedTransactionsResponseDto,
 } from './dto/response.dto.js';
+import { TransactionsQueryDto } from './dto/transactions-query.dto.js';
 
 @ApiTags('Wallet API')
 @ApiBearerAuth('admin-token')
@@ -39,7 +43,7 @@ import {
 export class WalletController {
   constructor(private readonly walletService: WalletService) { }
 
-  @Post('user')
+  @Post(['user', 'register'])
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({
@@ -50,6 +54,16 @@ export class WalletController {
   @ApiResponse({ status: 409, description: 'Username already taken' })
   register(@Body() dto: RegisterUserDto): Promise<TokenResponseDto> {
     return this.walletService.register(dto);
+  }
+
+  @Get(['user/check-username/:username', 'check-username/:username'])
+  @ApiOperation({ summary: 'Check if username is already registered' })
+  @ApiResponse({
+    status: 200,
+    description: 'Availability check result with exists and available booleans',
+  })
+  checkUsername(@Param('username') username: string) {
+    return this.walletService.checkUsername(username);
   }
 
   @Post('topup')
@@ -122,5 +136,22 @@ export class WalletController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getTopUsers(): Promise<TopUserItemDto[]> {
     return this.walletService.getTopUsers();
+  }
+
+  @Get('transactions')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Fetch paginated transaction history with filtering and search' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated transactions list',
+    type: PaginatedTransactionsResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  getTransactions(
+    @CurrentUser() user: User,
+    @Query() query: TransactionsQueryDto,
+  ): Promise<PaginatedTransactionsResponseDto> {
+    return this.walletService.getTransactions(user, query);
   }
 }

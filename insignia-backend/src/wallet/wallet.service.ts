@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import type { User } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterUserDto } from './dto/register-user.dto.js';
 import { TopupDto } from './dto/topup.dto.js';
@@ -16,7 +17,10 @@ import {
   BalanceResponseDto,
   TransactionItemDto,
   TopUserItemDto,
+  PaginatedTransactionsResponseDto,
+  TransactionRecordDto,
 } from './dto/response.dto.js';
+import { TransactionsQueryDto } from './dto/transactions-query.dto.js';
 
 @Injectable()
 export class WalletService {
@@ -25,18 +29,62 @@ export class WalletService {
     private readonly jwtService: JwtService,
   ) {}
 
+  async checkUsername(username: string): Promise<{ exists: boolean; available: boolean; message: string }> {
+    const cleanUsername = (username || '').trim().toLowerCase();
+    if (!cleanUsername) {
+      return { exists: false, available: true, message: 'Username is empty' };
+    }
+    const existingUser = await this.prisma.user.findUnique({
+      where: { username: cleanUsername },
+    });
+    const existingAdmin = await this.prisma.admin.findUnique({
+      where: { username: cleanUsername },
+    });
+
+    const exists = Boolean(existingUser || existingAdmin);
+    return {
+      exists,
+      available: !exists,
+      message: exists
+        ? `Username '${username}' is already taken.`
+        : `Username '${username}' is available.`,
+    };
+  }
+
   async register(dto: RegisterUserDto): Promise<TokenResponseDto> {
+    const cleanUsername = dto.username.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({
-      where: { username: dto.username },
+      where: { username: cleanUsername },
     });
 
     if (existing) {
       throw new ConflictException(`Username '${dto.username}' already exists`);
     }
 
+    let hashedPassword: string | null = null;
+    if (dto.password && dto.password.trim()) {
+      hashedPassword = await bcrypt.hash(dto.password.trim(), 10);
+    }
+
+    // Generate unique USR-XXXX code
+    const totalUsers = await this.prisma.user.count();
+    let userCode = `USR-${String(totalUsers + 1).padStart(4, '0')}`;
+    const codeExists = await this.prisma.user.findUnique({ where: { userCode } });
+    if (codeExists) {
+      userCode = `USR-${Date.now().toString().slice(-4)}`;
+    }
+
     const user = await this.prisma.user.create({
       data: {
-        username: dto.username,
+        username: cleanUsername,
+        password: hashedPassword,
+        fullName: dto.fullName?.trim() || cleanUsername,
+        dateOfBirth: dto.dateOfBirth?.trim() || null,
+        email: dto.email?.trim() || `${cleanUsername}@example.com`,
+        phone: dto.phone?.trim() || null,
+        address: dto.address?.trim() || null,
+        userCode,
+        status: 'Active',
         balance: 0,
       },
     });
@@ -211,5 +259,147 @@ export class WalletService {
       username: userMap.get(g.fromUserId) ?? 'unknown',
       transacted_value: Number(g._sum.amount),
     }));
+  }
+
+  async getTransactions(
+    user: User,
+    query: TransactionsQueryDto,
+  ): Promise<PaginatedTransactionsResponseDto> {
+    const page = Math.max(1, Number(query.page) || 1);
+    const pageSize = Math.max(1, Number(query.pageSize) || 10);
+    const isAdmin = user.username === 'admin';
+
+    // 1. Fetch transfers
+    const transfers = await this.prisma.transfer.findMany({
+      where: isAdmin
+        ? {}
+        : {
+            OR: [{ fromUserId: user.id }, { toUserId: user.id }],
+          },
+      include: {
+        fromUser: true,
+        toUser: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 2. Fetch topups
+    const topups = await this.prisma.topup.findMany({
+      where: isAdmin ? {} : { userId: user.id },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // 3. Format unified transaction records
+    const unified: TransactionRecordDto[] = [];
+
+    for (const tx of transfers) {
+      let counterparty = '';
+      let signedAmount = 0;
+
+      if (tx.fromUserId === user.id) {
+        counterparty = tx.toUser.username;
+        signedAmount = -Number(tx.amount);
+      } else if (tx.toUserId === user.id) {
+        counterparty = tx.fromUser.username;
+        signedAmount = Number(tx.amount);
+      } else {
+        counterparty = tx.toUser.username;
+        signedAmount = -Number(tx.amount);
+      }
+
+      unified.push({
+        id: tx.transferCode || tx.id.slice(0, 8),
+        username: counterparty,
+        amount: signedAmount,
+        created_at: tx.createdAt.toISOString(),
+        description: tx.description || tx.notes || `Transfer between @${tx.fromUser.username} and @${tx.toUser.username}`,
+      });
+    }
+
+    for (const top of topups) {
+      unified.push({
+        id: top.topupCode || top.id.slice(0, 8),
+        username: 'system',
+        amount: Number(top.amount),
+        created_at: top.createdAt.toISOString(),
+        description: top.notes || 'Direct wallet balance top-up',
+      });
+    }
+
+    // Sort by created_at descending
+    unified.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // Apply filters
+    let filtered = unified;
+
+    if (query.search && query.search.trim()) {
+      const term = query.search.trim().toLowerCase();
+      filtered = filtered.filter(
+        (tx) =>
+          tx.id.toLowerCase().includes(term) ||
+          tx.username.toLowerCase().includes(term) ||
+          (tx.description && tx.description.toLowerCase().includes(term)),
+      );
+    }
+
+    if (query.direction && query.direction !== 'all') {
+      if (query.direction === 'incoming') {
+        filtered = filtered.filter((tx) => tx.amount > 0);
+      } else if (query.direction === 'outgoing') {
+        filtered = filtered.filter((tx) => tx.amount < 0);
+      }
+    }
+
+    if (query.dateFrom) {
+      const fromTime = new Date(query.dateFrom).getTime();
+      if (!isNaN(fromTime)) {
+        filtered = filtered.filter((tx) => new Date(tx.created_at).getTime() >= fromTime);
+      }
+    }
+
+    if (query.dateTo) {
+      const toTime = new Date(query.dateTo).getTime();
+      if (!isNaN(toTime)) {
+        filtered = filtered.filter((tx) => new Date(tx.created_at).getTime() <= toTime);
+      }
+    }
+
+    if (query.sortBy) {
+      const field = query.sortBy.toLowerCase();
+      const isAsc = query.sortOrder === 'asc';
+      filtered.sort((a, b) => {
+        let cmp = 0;
+        if (field === 'id') {
+          cmp = a.id.localeCompare(b.id);
+        } else if (field === 'username' || field === 'counterparty') {
+          cmp = a.username.localeCompare(b.username);
+        } else if (field === 'amount') {
+          cmp = a.amount - b.amount;
+        } else if (field === 'direction') {
+          const dirA = a.amount > 0 ? 'incoming' : 'outgoing';
+          const dirB = b.amount > 0 ? 'incoming' : 'outgoing';
+          cmp = dirA.localeCompare(dirB);
+        } else if (field === 'created_at' || field === 'date' || field === 'createdat') {
+          cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        } else if (field === 'description') {
+          cmp = (a.description || '').localeCompare(b.description || '');
+        }
+        return isAsc ? cmp : -cmp;
+      });
+    } else if (query.sortOrder === 'asc') {
+      filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+
+    const total = filtered.length;
+    const skip = (page - 1) * pageSize;
+    const items = filtered.slice(skip, skip + pageSize);
+
+    return {
+      items,
+      page,
+      pageSize,
+      total,
+    };
   }
 }
