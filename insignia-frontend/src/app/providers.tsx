@@ -25,7 +25,7 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL ? import.meta.env.BASE_URL.replace(/\/$/, '') : undefined}>
         <AuthProvider>{children}</AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
