@@ -12,6 +12,7 @@ import { DemoBadge } from '@/components/ui/DemoBadge';
 import { APP_CONFIG } from '@/app/config';
 import { Eye, EyeOff, Lock, User, KeyRound, Info, ExternalLink } from 'lucide-react';
 import { normalizeApiError } from '@/services/api/client';
+import insigniaLogo from '@/assets/logo.png';
 
 export const LoginPage: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
@@ -71,7 +72,7 @@ export const LoginPage: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center mb-3">
           <img
-            src="/favicon.png"
+            src={insigniaLogo}
             alt="Insignia Wallet"
             className="w-14 h-14 rounded-2xl object-contain shadow-md select-none"
           />

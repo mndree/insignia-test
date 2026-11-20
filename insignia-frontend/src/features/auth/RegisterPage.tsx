@@ -6,6 +6,7 @@ import { normalizeApiError } from '@/services/api/client';
 import { checkUsernameApi } from '@/services/api/endpoints';
 import { formatPhoneNumber, formatDateInput } from '@/utils/masking';
 import { cn } from '@/utils/cn';
+import insigniaLogo from '@/assets/logo.png';
 import {
   User,
   Lock,
@@ -154,7 +155,7 @@ export const RegisterPage: React.FC = () => {
       {/* Brand Header */}
       <div className="flex flex-col items-center mb-6 text-center">
         <img
-          src="/favicon.png"
+          src={insigniaLogo}
           alt="Insignia Wallet"
           className="w-12 h-12 rounded-2xl shadow-sm mb-3 select-none"
         />
