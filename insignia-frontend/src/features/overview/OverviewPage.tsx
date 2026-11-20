@@ -13,7 +13,8 @@ import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
 
 export const OverviewPage: React.FC = () => {
-  const { onOpenSidebar } = useOutletContext<{ onOpenSidebar: () => void }>();
+  const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => { });
   const { user } = useAuth();
 
   const [isTopupOpen, setIsTopupOpen] = useState(false);
