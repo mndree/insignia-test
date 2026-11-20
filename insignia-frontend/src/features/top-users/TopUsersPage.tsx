@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Card, CardContent } from '@/components/ui/Card';
+import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
 import { getTopUsersApi } from '@/services/api/endpoints';
 import { formatWalletUnits } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
@@ -20,8 +21,12 @@ import {
 } from 'lucide-react';
 
 export const TopUsersPage: React.FC = () => {
-  const { onOpenSidebar } = useOutletContext<{ onOpenSidebar: () => void }>();
+  const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
   const { user: currentUser } = useAuth();
+
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>(null);
 
   const {
     data,
@@ -35,6 +40,50 @@ export const TopUsersPage: React.FC = () => {
   });
 
   const users = data || [];
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else if (sortOrder === 'desc') {
+        // Reset to default
+        setSortField(null);
+        setSortOrder(null);
+      } else {
+        setSortOrder('asc');
+      }
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const indexedUsers = useMemo(() => {
+    return users.map((u, index) => ({
+      ...u,
+      originalRank: index + 1,
+    }));
+  }, [users]);
+
+  const sortedUsers = useMemo(() => {
+    if (!sortField) return indexedUsers;
+    const list = [...indexedUsers];
+    const isAsc = sortOrder === 'asc';
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortField === 'rank') {
+        cmp = a.originalRank - b.originalRank;
+      } else if (sortField === 'username') {
+        cmp = a.username.localeCompare(b.username);
+      } else if (sortField === 'transacted_value' || sortField === 'amount') {
+        cmp = a.transacted_value - b.transacted_value;
+      }
+      return isAsc ? cmp : -cmp;
+    });
+
+    return list;
+  }, [indexedUsers, sortField, sortOrder]);
 
   const getRankBadge = (rank: number) => {
     if (rank === 1) {
@@ -78,8 +127,9 @@ export const TopUsersPage: React.FC = () => {
             onClick={() => refetch()}
             disabled={isFetching}
             aria-label="Refresh top users"
+            className="bg-white hover:bg-slate-50 border-slate-200/90 text-navy-800 font-semibold"
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin text-brand-600' : ''}`} />
             Refresh
           </Button>
         }
@@ -131,24 +181,59 @@ export const TopUsersPage: React.FC = () => {
         </Card>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          {/* Table Count Header */}
+          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              <span className="font-medium">
+                Showing <strong className="text-navy-900 font-bold">{sortedUsers.length}</strong> top transacting users
+              </span>
+            </div>
+            {sortField && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full font-medium border border-brand-200/60">
+                Sorted by <span className="font-semibold">{sortField}</span> ({sortOrder === 'asc' ? 'ascending' : 'descending'})
+              </span>
+            )}
+          </div>
+
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th scope="col" className="py-3 px-4 sm:px-6 w-20">Rank</th>
-                  <th scope="col" className="py-3 px-4 sm:px-6">Username</th>
-                  <th scope="col" className="py-3 px-4 sm:px-6 text-right">Total Sent (Outgoing)</th>
+                  <TableColumnHeader
+                    label="Rank"
+                    field="rank"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                    className="w-20"
+                  />
+                  <TableColumnHeader
+                    label="Username"
+                    field="username"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                  />
+                  <TableColumnHeader
+                    label="Total Sent (Outgoing)"
+                    field="transacted_value"
+                    currentSortField={sortField}
+                    currentSortOrder={sortOrder}
+                    onSort={handleSort}
+                    align="right"
+                  />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {users.map((item, index) => {
-                  const rank = index + 1;
+                {sortedUsers.map((item) => {
+                  const rank = item.originalRank;
                   const isCurrent =
                     currentUser?.username?.toLowerCase() === item.username.toLowerCase();
 
                   return (
                     <tr
-                      key={`${item.username}-${index}`}
+                      key={`${item.username}-${rank}`}
                       className={`transition-colors ${
                         isCurrent
                           ? 'bg-brand-50/60 font-semibold border-l-4 border-l-brand-600'
@@ -183,7 +268,7 @@ export const TopUsersPage: React.FC = () => {
           <div className="py-3 px-6 bg-slate-50/60 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Trophy className="w-3.5 h-3.5 text-amber-500" />
-              Top {users.length} transacting users
+              Top {sortedUsers.length} transacting users
             </span>
             <span className="text-slate-400">Strictly outgoing transfers</span>
           </div>

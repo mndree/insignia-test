@@ -15,7 +15,8 @@ import { normalizeApiError } from '@/services/api/client';
 import { RefreshCw, FileText, AlertTriangle } from 'lucide-react';
 
 export const TransactionsPage: React.FC = () => {
-  const { onOpenSidebar } = useOutletContext<{ onOpenSidebar: () => void }>();
+  const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Read URL query parameters
@@ -25,6 +26,8 @@ export const TransactionsPage: React.FC = () => {
   const directionParam = (searchParams.get('direction') as TransactionDirection) || 'all';
   const dateFromParam = searchParams.get('dateFrom') || '';
   const dateToParam = searchParams.get('dateTo') || '';
+  const sortByParam = searchParams.get('sortBy') || '';
+  const sortOrderParam = (searchParams.get('sortOrder') as 'asc' | 'desc') || null;
 
   // Local state for debounced search input
   const [searchInput, setSearchInput] = useState(searchParam);
@@ -81,6 +84,28 @@ export const TransactionsPage: React.FC = () => {
     });
   };
 
+  const handleSort = (field: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (sortByParam === field) {
+        if (sortOrderParam === 'asc') {
+          next.set('sortOrder', 'desc');
+        } else if (sortOrderParam === 'desc') {
+          // Reset to default
+          next.delete('sortBy');
+          next.delete('sortOrder');
+        } else {
+          next.set('sortOrder', 'asc');
+        }
+      } else {
+        next.set('sortBy', field);
+        next.set('sortOrder', 'asc');
+      }
+      next.set('page', '1');
+      return next;
+    });
+  };
+
   const handleClearFilters = () => {
     setSearchInput('');
     setSearchParams({
@@ -108,6 +133,8 @@ export const TransactionsPage: React.FC = () => {
         direction: directionParam,
         dateFrom: dateFromParam,
         dateTo: dateToParam,
+        sortBy: sortByParam,
+        sortOrder: sortOrderParam,
       },
     ],
     queryFn: () =>
@@ -118,6 +145,8 @@ export const TransactionsPage: React.FC = () => {
         direction: directionParam !== 'all' ? directionParam : undefined,
         dateFrom: dateFromParam || undefined,
         dateTo: dateToParam || undefined,
+        sortBy: sortByParam || undefined,
+        sortOrder: sortOrderParam || undefined,
       }),
     enabled: isConfigured,
   });
@@ -139,8 +168,9 @@ export const TransactionsPage: React.FC = () => {
             onClick={() => refetch()}
             disabled={isFetching || !isConfigured}
             aria-label="Refresh transactions"
+            className="bg-white hover:bg-slate-50 border-slate-200/90 text-navy-800 font-semibold"
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin text-brand-600' : ''}`} />
             Refresh
           </Button>
         }
@@ -200,7 +230,11 @@ export const TransactionsPage: React.FC = () => {
           {/* Transactions Table */}
           <TransactionTable
             items={data?.items || []}
+            totalCount={data?.total}
             isLoading={isLoading}
+            currentSortField={sortByParam}
+            currentSortOrder={sortOrderParam}
+            onSort={handleSort}
           />
 
           {/* Pagination Controls */}
