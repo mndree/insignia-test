@@ -40,10 +40,46 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle 401s and normalize error responses
+// Response Interceptor: Handle automatic IPv4 fallback, 401s, and normalize error responses
 apiClient.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
+  (response) => {
+    // If a request accidentally returned HTML (e.g. from an unintended dev server collision on port 3000)
+    if (
+      typeof response.data === 'string' &&
+      response.data.includes('<!DOCTYPE html>') &&
+      response.config.headers?.['Accept']?.toString().includes('application/json')
+    ) {
+      throw new AxiosError(
+        'Server returned HTML instead of JSON API response.',
+        AxiosError.ERR_BAD_RESPONSE,
+        response.config,
+        response.request,
+        response
+      );
+    }
+    return response;
+  },
+  async (error: AxiosError) => {
+    const originalRequest = error.config as
+      | (InternalAxiosRequestConfig & { _retryLoopback?: boolean })
+      | undefined;
+
+    // Auto-fallback: If request failed on 'localhost' due to IPv6 collision, retry with 127.0.0.1
+    if (
+      originalRequest &&
+      !originalRequest._retryLoopback &&
+      (!error.response ||
+        (typeof error.response.data === 'string' &&
+          error.response.data.includes('<!DOCTYPE html>')))
+    ) {
+      const currentBaseUrl = originalRequest.baseURL || apiClient.defaults.baseURL || '';
+      if (currentBaseUrl.includes('localhost')) {
+        originalRequest._retryLoopback = true;
+        originalRequest.baseURL = currentBaseUrl.replace('localhost', '127.0.0.1');
+        return apiClient(originalRequest);
+      }
+    }
+
     const isLoginEndpoint =
       error.config?.url?.includes('/login') ||
       error.config?.url === APP_CONFIG.authLoginPath;
