@@ -62,7 +62,7 @@ async function bootstrap() {
 
   // Redirect root '/' directly to Swagger UI
   app.getHttpAdapter().get('/', (_req, res) => {
-    res.redirect('/docs');
+    res.redirect('./docs');
   });
 
   const port = process.env.PORT ?? 3001;
