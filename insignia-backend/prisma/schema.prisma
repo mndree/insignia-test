@@ -8,21 +8,38 @@ datasource db {
 }
 
 model Admin {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  username    String   @unique
+  password    String
+  fullName    String?
+  email       String?
+  phone       String?
+  dateOfBirth String?
+  gender      String?  @default("Male")
+  address     String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
   @@map("admins")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  balance   Decimal  @default(0) @db.Decimal(18, 2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  userCode    String?  @unique
+  username    String   @unique
+  fullName    String?
+  email       String?
+  phone       String?
+  dateOfBirth String?
+  address     String?
+  status      String   @default("Active")
+  password    String?
+  token       String?
+  balance     Decimal  @default(0) @db.Decimal(18, 2)
+  lastLoginAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
   sentTransfers     Transfer[] @relation("SentTransfers")
   receivedTransfers Transfer[] @relation("ReceivedTransfers")
@@ -33,23 +50,29 @@ model User {
 
 model Topup {
   id        String   @id @default(uuid())
+  topupCode String?  @unique
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount    Decimal  @db.Decimal(18, 2)
-  createdAt DateTime @default(now())
+  notes     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([userId])
   @@map("topups")
 }
 
 model Transfer {
-  id          String   @id @default(uuid())
-  fromUserId  String
-  fromUser    User     @relation("SentTransfers", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUserId    String
-  toUser      User     @relation("ReceivedTransfers", fields: [toUserId], references: [id], onDelete: Cascade)
-  amount      Decimal  @db.Decimal(18, 2)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(uuid())
+  transferCode String?  @unique
+  fromUserId   String
+  fromUser     User     @relation("SentTransfers", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId     String
+  toUser       User     @relation("ReceivedTransfers", fields: [toUserId], references: [id], onDelete: Cascade)
+  amount       Decimal  @db.Decimal(18, 2)
+  notes        String?
+  description  String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @default(now()) @updatedAt @db.Timestamptz(3)
 
   @@index([fromUserId])
   @@index([toUserId])
