@@ -10,7 +10,7 @@
  * 7. GET /top_users (Verify overall top users excluding 0 outgoing)
  */
 
-const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3001';
 
 const uid = Date.now().toString().slice(-5);
 const aliceUsername = `alice_smoke_${uid}`;

@@ -2,7 +2,7 @@
 # Tests all 6 Stoplight endpoints without bash continuation syntax
 
 $ErrorActionPreference = "Stop"
-$BaseUrl = if ($env:BASE_URL) { $env:BASE_URL } else { "http://localhost:3000" }
+$BaseUrl = if ($env:BASE_URL) { $env:BASE_URL } else { "http://localhost:3001" }
 
 $Suffix = (Get-Date -Format "HHmmss")
 $AliceUser = "alice_ps_$Suffix"
