@@ -417,7 +417,7 @@ export const UsersListPage: React.FC = () => {
                     {/* User: Avatar + Name + @username */}
                     <td className="py-4 px-4 sm:px-6 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <UserAvatar name={user.fullName || user.username} size="md" />
+                        <UserAvatar name={user.fullName || user.username} size="md" avatarUrl={user.avatarUrl} />
                         <div>
                           <span className="block font-bold text-navy-900 leading-snug">
                             {user.fullName}

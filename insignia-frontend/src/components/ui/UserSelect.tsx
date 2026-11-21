@@ -104,7 +104,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
         >
           {selectedUser ? (
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <UserAvatar name={selectedUser.fullName || selectedUser.username} size="sm" />
+              <UserAvatar name={selectedUser.fullName || selectedUser.username} size="sm" avatarUrl={selectedUser.avatarUrl} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-navy-900 truncate">
@@ -194,7 +194,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <UserAvatar name={u.fullName || u.username} size="sm" />
+                        <UserAvatar name={u.fullName || u.username} size="sm" avatarUrl={u.avatarUrl} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-bold truncate">

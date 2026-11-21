@@ -102,8 +102,8 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
     mutationFn: (data: any) => updateAdminProfileApi(username, data),
     onSuccess: () => {
       setSuccessMessage('Biodata updated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['admin_profile', username] });
-      queryClient.invalidateQueries({ queryKey: ['admin_user_details', username] });
+      queryClient.invalidateQueries({ queryKey: ['admin_profile'] });
+      queryClient.invalidateQueries({ queryKey: ['admin_user_details'] });
       queryClient.invalidateQueries({ queryKey: ['admin_users'] });
       setTimeout(() => {
         setSuccessMessage(null);

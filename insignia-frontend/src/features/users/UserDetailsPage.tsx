@@ -161,7 +161,7 @@ export const UserDetailsPage: React.FC = () => {
       {/* User Summary Banner Card */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4 min-w-0">
-          <UserAvatar name={user.fullName || user.username} size="xl" />
+          <UserAvatar name={user.fullName || user.username} size="xl" avatarUrl={user.avatarUrl} />
           <div className="min-w-0">
             <h2 className="text-xl sm:text-2xl font-extrabold text-navy-900 tracking-tight leading-tight truncate">
               {user.fullName}

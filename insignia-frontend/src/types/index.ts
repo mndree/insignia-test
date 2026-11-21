@@ -96,7 +96,9 @@ export interface UserProfileDto {
   email: string;
   phone?: string;
   dateOfBirth?: string;
+  gender?: string;
   address?: string;
+  avatarUrl?: string | null;
   balance: number;
   status: string;
   createdAt: string;
@@ -153,6 +155,7 @@ export interface UserListItemDto {
   phone: string;
   dateOfBirth: string;
   address: string;
+  avatarUrl?: string | null;
   status: 'Active' | 'Inactive';
   balance: number;
   createdAt: string;
@@ -202,6 +205,7 @@ export interface UserDetailsResponseDto {
   phone: string;
   dateOfBirth: string;
   address: string;
+  avatarUrl?: string | null;
   status: 'Active' | 'Inactive';
   balance: number;
   createdAt: string;
@@ -222,6 +226,8 @@ export interface UpdateUserProfileDto {
   phone?: string;
   dateOfBirth?: string;
   address?: string;
+  avatarUrl?: string | null;
+  gender?: string;
   status?: 'Active' | 'Inactive';
   balance?: number;
   password?: string;

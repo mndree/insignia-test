@@ -285,6 +285,7 @@ export class AdminService {
         phone: u.phone || '-',
         dateOfBirth: u.dateOfBirth || '-',
         address: u.address || '-',
+        avatarUrl: u.avatarUrl || null,
         status: u.status,
         balance: Number(u.balance),
         createdAt: u.createdAt,
@@ -366,6 +367,7 @@ export class AdminService {
       phone: user.phone || '+62 812 3456 7890',
       dateOfBirth: user.dateOfBirth || '15 May 1996',
       address: user.address || 'South Jakarta, Indonesia',
+      avatarUrl: user.avatarUrl || null,
       status: user.status,
       balance: Number(user.balance),
       createdAt: user.createdAt,
@@ -397,6 +399,7 @@ export class AdminService {
     if (dto.phone !== undefined) dataToUpdate.phone = dto.phone?.trim() || null;
     if (dto.dateOfBirth !== undefined) dataToUpdate.dateOfBirth = dto.dateOfBirth?.trim() || null;
     if (dto.address !== undefined) dataToUpdate.address = dto.address?.trim() || null;
+    if (dto.avatarUrl !== undefined) dataToUpdate.avatarUrl = dto.avatarUrl ? String(dto.avatarUrl).trim() : null;
     if (dto.status !== undefined) dataToUpdate.status = dto.status;
 
     // Optional userCode update with uniqueness check
@@ -677,9 +680,9 @@ export class AdminService {
       email: user.email || `${user.username}@example.com`,
       phone: user.phone || '',
       dateOfBirth: user.dateOfBirth || '',
-      gender: 'Male',
+      gender: user.gender || 'Male',
       address: user.address || '',
-      avatarUrl: (user as any).avatarUrl || null,
+      avatarUrl: user.avatarUrl || null,
       status: user.status || 'Active',
     };
   }
@@ -710,6 +713,7 @@ export class AdminService {
             phone: dto.phone !== undefined ? dto.phone : user.phone,
             dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : user.dateOfBirth,
             address: dto.address !== undefined ? dto.address : user.address,
+            avatarUrl: dto.avatarUrl !== undefined ? (dto.avatarUrl || null) : user.avatarUrl,
           },
         });
       }
@@ -727,6 +731,7 @@ export class AdminService {
           phone: dto.phone !== undefined ? dto.phone : user.phone,
           dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : user.dateOfBirth,
           address: dto.address !== undefined ? dto.address : user.address,
+          avatarUrl: dto.avatarUrl !== undefined ? (dto.avatarUrl || null) : user.avatarUrl,
         },
       });
 
@@ -738,6 +743,7 @@ export class AdminService {
         phone: updatedUser.phone,
         dateOfBirth: updatedUser.dateOfBirth,
         address: updatedUser.address,
+        avatarUrl: updatedUser.avatarUrl || null,
       };
     }
 

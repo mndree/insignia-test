@@ -58,10 +58,10 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const isUser = user?.role === 'USER';
   const navItems = isUser ? userNavItems : adminNavItems;
 
-  const { data: adminProfile } = useQuery({
+  const { data: userProfile } = useQuery({
     queryKey: ['admin_profile', user?.username || 'admin'],
     queryFn: () => getAdminProfileApi(user?.username || 'admin'),
-    enabled: !isUser,
+    enabled: Boolean(user?.username),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -189,9 +189,9 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             title="Account options"
           >
             <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-700 font-extrabold text-sm uppercase shrink-0 select-none overflow-hidden">
-              {(adminProfile as any)?.avatarUrl ? (
+              {(userProfile as any)?.avatarUrl ? (
                 <img
-                  src={(adminProfile as any).avatarUrl}
+                  src={(userProfile as any).avatarUrl}
                   alt="Avatar"
                   className="w-full h-full object-cover rounded-xl"
                 />

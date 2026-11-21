@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/utils/cn';
 
 interface UserAvatarProps {
   name: string;
+  avatarUrl?: string | null;
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
@@ -38,9 +39,11 @@ function getColorForString(str: string): string {
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({
   name,
+  avatarUrl,
   className,
   size = 'md',
 }) => {
+  const [imageError, setImageError] = useState(false);
   const initials = getInitials(name);
   const colorClass = getColorForString(name || 'user');
 
@@ -51,16 +54,27 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     xl: 'w-14 h-14 text-base font-bold rounded-2xl',
   };
 
+  const hasImage = Boolean(avatarUrl) && !imageError;
+
   return (
     <div
       className={cn(
-        'flex items-center justify-center font-bold tracking-tight select-none border shrink-0',
+        'flex items-center justify-center font-bold tracking-tight select-none border shrink-0 overflow-hidden',
         colorClass,
         sizes[size],
         className
       )}
     >
-      {initials}
+      {hasImage ? (
+        <img
+          src={avatarUrl!}
+          alt={name}
+          onError={() => setImageError(true)}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        initials
+      )}
     </div>
   );
 };

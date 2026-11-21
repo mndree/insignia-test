@@ -32,7 +32,9 @@ model User {
   email       String?
   phone       String?
   dateOfBirth String?
+  gender      String?  @default("Male")
   address     String?
+  avatarUrl   String?
   status      String   @default("Active")
   password    String?
   token       String?

@@ -125,10 +125,18 @@ export const MyProfilePage: React.FC = () => {
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="w-20 h-20 rounded-2xl bg-brand-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-md select-none shrink-0">
-                {profile?.fullName
-                  ? profile.fullName.slice(0, 2).toUpperCase()
-                  : username.slice(0, 2).toUpperCase()}
+              <div className="w-20 h-20 rounded-2xl bg-brand-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-md select-none shrink-0 overflow-hidden">
+                {profile?.avatarUrl ? (
+                  <img
+                    src={profile.avatarUrl}
+                    alt={profile?.fullName || username}
+                    className="w-full h-full object-cover"
+                  />
+                ) : profile?.fullName ? (
+                  profile.fullName.slice(0, 2).toUpperCase()
+                ) : (
+                  username.slice(0, 2).toUpperCase()
+                )}
               </div>
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2.5">

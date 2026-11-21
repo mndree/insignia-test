@@ -428,6 +428,7 @@ export class WalletService {
       phone: user.phone || '',
       dateOfBirth: user.dateOfBirth || '',
       address: user.address || '',
+      avatarUrl: user.avatarUrl || null,
       balance: Number(user.balance),
       status: user.status,
       createdAt: user.createdAt.toISOString(),
@@ -442,6 +443,7 @@ export class WalletService {
     phone?: string;
     dateOfBirth?: string;
     address?: string;
+    avatarUrl?: string | null;
   }) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -456,6 +458,7 @@ export class WalletService {
         phone: dto.phone !== undefined ? dto.phone : user.phone,
         dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : user.dateOfBirth,
         address: dto.address !== undefined ? dto.address : user.address,
+        avatarUrl: dto.avatarUrl !== undefined ? (dto.avatarUrl || null) : user.avatarUrl,
       },
     });
 
@@ -470,6 +473,7 @@ export class WalletService {
         phone: updated.phone,
         dateOfBirth: updated.dateOfBirth,
         address: updated.address,
+        avatarUrl: updated.avatarUrl || null,
         balance: Number(updated.balance),
         status: updated.status,
       },
