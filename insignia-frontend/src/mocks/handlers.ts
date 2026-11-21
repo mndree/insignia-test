@@ -56,7 +56,7 @@ export const handlers = [
       }
 
       const cleanUsername = body.username.trim().toLowerCase();
-      const existing = usersStore.find((u) => u.username.toLowerCase() === cleanUsername);
+      const existing = cleanUsername === 'admin' || usersStore.some((u) => u.username.toLowerCase() === cleanUsername);
       if (existing) {
         return HttpResponse.json(
           { message: `Username '${cleanUsername}' is already taken.` },
@@ -93,7 +93,7 @@ export const handlers = [
   http.get('*/check-username/:username', ({ params }) => {
     const { username } = params;
     const cleanUsername = String(username || '').trim().toLowerCase();
-    const exists = usersStore.some((u) => u.username.toLowerCase() === cleanUsername);
+    const exists = cleanUsername === 'admin' || usersStore.some((u) => u.username.toLowerCase() === cleanUsername);
     return HttpResponse.json({
       exists,
       available: !exists,
@@ -106,7 +106,7 @@ export const handlers = [
   http.get('*/user/check-username/:username', ({ params }) => {
     const { username } = params;
     const cleanUsername = String(username || '').trim().toLowerCase();
-    const exists = usersStore.some((u) => u.username.toLowerCase() === cleanUsername);
+    const exists = cleanUsername === 'admin' || usersStore.some((u) => u.username.toLowerCase() === cleanUsername);
     return HttpResponse.json({
       exists,
       available: !exists,
@@ -143,11 +143,14 @@ export const handlers = [
         );
       }
 
+      const role = user.username.toLowerCase() === 'admin' ? 'ADMIN' : 'USER';
       return HttpResponse.json(
         {
           token: user.token,
+          role,
           user: {
             username: user.username,
+            role,
           },
         },
         { status: 200 }

@@ -11,15 +11,17 @@ import type { User } from '@prisma/client';
 
 export class WalletService {
   async checkUsername(username: string): Promise<{ exists: boolean; available: boolean; message: string }> {
-    const cleanUsername = (username || '').trim().toLowerCase();
+    const cleanUsername = (username || '').trim();
     if (!cleanUsername) {
       return { exists: false, available: true, message: 'Username is empty' };
     }
-    const existingUser = await prisma.user.findUnique({
-      where: { username: cleanUsername },
+
+    // Check in both users and admins table
+    const existingUser = await prisma.user.findFirst({
+      where: { username: { equals: cleanUsername, mode: 'insensitive' } },
     });
-    const existingAdmin = await prisma.admin.findUnique({
-      where: { username: cleanUsername },
+    const existingAdmin = await prisma.admin.findFirst({
+      where: { username: { equals: cleanUsername, mode: 'insensitive' } },
     });
 
     const exists = Boolean(existingUser || existingAdmin);
@@ -45,12 +47,17 @@ export class WalletService {
       throw new BadRequestException('Username is required');
     }
 
-    const cleanUsername = dto.username.trim().toLowerCase();
-    const existing = await prisma.user.findUnique({
-      where: { username: cleanUsername },
+    const cleanUsername = dto.username.trim();
+
+    // Check both users and admins table to prevent collision
+    const existingUser = await prisma.user.findFirst({
+      where: { username: { equals: cleanUsername, mode: 'insensitive' } },
+    });
+    const existingAdmin = await prisma.admin.findFirst({
+      where: { username: { equals: cleanUsername, mode: 'insensitive' } },
     });
 
-    if (existing) {
+    if (existingUser || existingAdmin) {
       throw new ConflictException(`Username '${dto.username}' already exists`);
     }
 

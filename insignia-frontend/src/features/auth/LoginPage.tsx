@@ -28,13 +28,12 @@ export const LoginPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: APP_CONFIG.isDemoMode ? 'admin' : '',
-      password: APP_CONFIG.isDemoMode ? 'admin123' : '',
+      username: '',
+      password: '',
     },
   });
 
@@ -57,17 +56,6 @@ export const LoginPage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleFillDemo = (type: 'admin' | 'user' = 'admin') => {
-    if (type === 'admin') {
-      setValue('username', 'admin', { shouldValidate: true });
-      setValue('password', 'admin123', { shouldValidate: true });
-    } else {
-      setValue('username', 'alice', { shouldValidate: true });
-      setValue('password', 'password123', { shouldValidate: true });
-    }
-    setErrorMessage(null);
   };
 
   const isLiveUnconfigured = APP_CONFIG.isLiveMode && !APP_CONFIG.isAuthLoginEndpointConfigured;
@@ -122,39 +110,12 @@ export const LoginPage: React.FC = () => {
               </Alert>
             )}
 
-            <div className="mb-5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
-                <span>Quick Sign-In Presets:</span>
-                <span className="text-[10px] text-slate-400">Click to fill</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleFillDemo('admin')}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 text-navy-800 transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
-                >
-                  <span>🛡️</span>
-                  <span>Admin</span>
-                  <span className="text-[10px] text-slate-400 font-normal">(admin)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleFillDemo('user')}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 text-navy-800 transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
-                >
-                  <span>👤</span>
-                  <span>User</span>
-                  <span className="text-[10px] text-slate-400 font-normal">(alice)</span>
-                </button>
-              </div>
-            </div>
-
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <Input
                 label="Username"
                 type="text"
                 autoComplete="username"
-                placeholder="e.g. admin"
+                placeholder="Enter your username"
                 disabled={isSubmitting || isLiveUnconfigured}
                 leftIcon={<User className="w-4 h-4" />}
                 error={errors.username?.message}

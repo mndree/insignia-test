@@ -116,9 +116,9 @@ export class AdminService {
 
     const cleanUsername = dto.username.trim();
 
-    // Check if admin login
-    const admin = await prisma.admin.findUnique({
-      where: { username: cleanUsername },
+    // 1. Check if username exists in 'admins' table -> Login as ADMIN
+    const admin = await prisma.admin.findFirst({
+      where: { username: { equals: cleanUsername, mode: 'insensitive' } },
     });
 
     if (admin) {
@@ -132,7 +132,7 @@ export class AdminService {
         create: {
           userCode: 'USR-0000',
           username: admin.username,
-          fullName: 'System Administrator',
+          fullName: admin.fullName || 'System Administrator',
           balance: 18150,
           status: 'Active',
         },
@@ -163,9 +163,9 @@ export class AdminService {
       };
     }
 
-    // Check if regular user login
-    const user = await prisma.user.findUnique({
-      where: { username: cleanUsername },
+    // 2. Check if username exists in 'users' table -> Login as USER
+    const user = await prisma.user.findFirst({
+      where: { username: { equals: cleanUsername, mode: 'insensitive' } },
     });
 
     if (!user) {
@@ -178,7 +178,7 @@ export class AdminService {
         throw new UnauthorizedException('Invalid credentials');
       }
     } else {
-      // If user has no password set (legacy or initial seed), accept password123 or admin123
+      // Legacy or seed accounts without hashed password
       if (dto.password !== 'password123' && dto.password !== 'admin123') {
         throw new UnauthorizedException('Invalid credentials');
       }

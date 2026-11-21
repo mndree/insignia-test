@@ -85,6 +85,26 @@ export const RegisterPage: React.FC = () => {
     return true;
   };
 
+  const handleCheckUsernameBlur = async () => {
+    const cleanUser = username.trim();
+    if (!cleanUser || cleanUser.length < 3) return;
+    setIsCheckingUsername(true);
+    try {
+      const res = await checkUsernameApi(cleanUser);
+      if (res.exists || !res.available) {
+        const errorMsg =
+          res.message || `Username '${cleanUser}' is already taken in system.`;
+        setUsernameError(errorMsg);
+      } else {
+        setUsernameError(null);
+      }
+    } catch {
+      // Ignore network errors on blur
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
   const handleNextFromStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     setUsernameError(null);
@@ -325,9 +345,15 @@ export const RegisterPage: React.FC = () => {
                         if (usernameError) setUsernameError(null);
                         if (stepError) setStepError(null);
                       }}
+                      onBlur={handleCheckUsernameBlur}
                       className="w-full bg-transparent px-3 py-2.5 text-sm text-navy-900 placeholder:text-slate-400 focus:outline-none"
                       required
                     />
+                    {isCheckingUsername && (
+                      <div className="mr-3 shrink-0">
+                        <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
                   {usernameError && (
                     <p className="text-xs text-rose-600 font-medium mt-1.5 flex items-center gap-1">
