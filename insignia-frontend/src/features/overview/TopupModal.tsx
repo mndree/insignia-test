@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatNumber } from '@/utils/formatters';
+import { formatAmountInput, parseAmountInput } from '@/utils/masking';
 import { normalizeApiError } from '@/services/api/client';
 import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { PlusCircle, Wallet, CheckCircle2 } from 'lucide-react';
@@ -24,6 +25,7 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [displayAmount, setDisplayAmount] = useState<string>('1,000');
 
   const {
     register,
@@ -38,6 +40,10 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
     },
   });
 
+  useEffect(() => {
+    register('amount');
+  }, [register]);
+
   const mutation = useMutation({
     mutationFn: topupApi,
     onSuccess: (_, variables) => {
@@ -47,7 +53,8 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
       queryClient.invalidateQueries({ queryKey: ['balance'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['top_transactions'] });
-      reset();
+      reset({ amount: 1000 });
+      setDisplayAmount('1,000');
       setTimeout(() => {
         setSuccessMessage(null);
         onClose();
@@ -70,7 +77,8 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
     if (!mutation.isPending) {
       setErrorMessage(null);
       setSuccessMessage(null);
-      reset();
+      reset({ amount: 1000 });
+      setDisplayAmount('1,000');
       onClose();
     }
   };
@@ -106,14 +114,20 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
           label="Top-Up Amount (units)"
-          type="number"
-          step="any"
-          placeholder="e.g. 1000"
+          type="text"
+          inputMode="decimal"
+          placeholder="e.g. 1,000"
           disabled={mutation.isPending}
           error={errors.amount?.message}
           helperText="Backend rule: 0 < amount < 10,000,000 wallet units."
           leftIcon={<Wallet className="w-4 h-4" />}
-          {...register('amount', { valueAsNumber: true })}
+          value={displayAmount}
+          onChange={(e) => {
+            const formatted = formatAmountInput(e.target.value);
+            setDisplayAmount(formatted);
+            const num = formatted === '' ? (NaN as any) : parseAmountInput(formatted);
+            setValue('amount', num, { shouldValidate: true });
+          }}
         />
 
         {/* Preset Amount Badges */}
@@ -127,7 +141,10 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
                 key={preset}
                 type="button"
                 disabled={mutation.isPending}
-                onClick={() => setValue('amount', preset, { shouldValidate: true })}
+                onClick={() => {
+                  setDisplayAmount(formatAmountInput(preset));
+                  setValue('amount', preset, { shouldValidate: true });
+                }}
                 className="py-1.5 px-2 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-navy-800 transition-colors focus-ring"
               >
                 +{formatNumber(preset)}

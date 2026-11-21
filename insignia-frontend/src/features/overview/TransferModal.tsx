@@ -9,6 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatWalletUnits, formatNumber } from '@/utils/formatters';
+import { formatAmountInput, parseAmountInput } from '@/utils/masking';
 import { normalizeApiError } from '@/services/api/client';
 import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { Send, ArrowRight, CheckCircle2, AlertTriangle, ShieldCheck, Wallet } from 'lucide-react';
@@ -94,7 +95,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
   // Keep sender balance updated
   const senderBalance = fromUser ? fromUser.balance : (initialCurrentBalance ?? 0);
-  const numericAmount = Math.max(0, parseFloat(amountInput) || 0);
+  const numericAmount = Math.max(0, parseAmountInput(amountInput));
   const senderBalanceAfter = Math.max(0, senderBalance - numericAmount);
   const recipientBalanceAfter = toUser ? toUser.balance + numericAmount : 0;
 
@@ -414,7 +415,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               {fromUser && senderBalance > 0 && (
                 <button
                   type="button"
-                  onClick={() => setAmountInput(String(senderBalance))}
+                  onClick={() => setAmountInput(formatAmountInput(senderBalance))}
                   className="text-[11px] font-semibold text-brand-600 hover:text-brand-700 transition-colors"
                 >
                   Use Max ({formatNumber(senderBalance)})
@@ -425,11 +426,10 @@ export const TransferModal: React.FC<TransferModalProps> = ({
             <div className="relative rounded-xl shadow-xs">
               <input
                 id="transfer-amount"
-                type="number"
-                min="1"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 value={amountInput}
-                onChange={(e) => setAmountInput(e.target.value)}
+                onChange={(e) => setAmountInput(formatAmountInput(e.target.value))}
                 placeholder="0"
                 required
                 disabled={mutation.isPending}
@@ -447,7 +447,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 <button
                   key={val}
                   type="button"
-                  onClick={() => setAmountInput(String(val))}
+                  onClick={() => setAmountInput(formatAmountInput(val))}
                   disabled={mutation.isPending}
                   className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors ${
                     numericAmount === val

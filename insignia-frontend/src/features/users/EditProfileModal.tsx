@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
 import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
-import { formatPhoneNumber } from '@/utils/masking';
+import { formatPhoneNumber, formatAmountInput, parseAmountInput } from '@/utils/masking';
 import {
   User,
   Mail,
@@ -44,7 +44,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [phone, setPhone] = useState(formatPhoneNumber(user.phone || ''));
   const [dateOfBirth, setDateOfBirth] = useState(user.dateOfBirth || '');
   const [address, setAddress] = useState(user.address || '');
-  const [balance, setBalance] = useState<string>(user.balance !== undefined ? user.balance.toString() : '0');
+  const [balance, setBalance] = useState<string>(user.balance !== undefined ? formatAmountInput(user.balance) : '0');
   const [status, setStatus] = useState<'Active' | 'Inactive'>(user.status || 'Active');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +86,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       phone: phone.trim() || undefined,
       dateOfBirth: dateOfBirth.trim() || undefined,
       address: address.trim() || undefined,
-      balance: balance ? Number(balance) : undefined,
+      balance: balance !== '' ? parseAmountInput(balance) : undefined,
       status,
       password: password.trim() || undefined,
     });
@@ -198,12 +198,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             label="Wallet Balance"
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             placeholder="0.00"
             value={balance}
-            onChange={(e) => setBalance(e.target.value)}
+            onChange={(e) => setBalance(formatAmountInput(e.target.value))}
             leftIcon={<Wallet className="w-4 h-4" />}
             disabled={mutation.isPending}
           />

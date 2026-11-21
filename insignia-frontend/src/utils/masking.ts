@@ -89,3 +89,46 @@ export function formatDateInput(value: string): string {
   if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
+
+/**
+ * Formats an amount/currency input with thousand separators (e.g. 5000 -> 5,000, 1000000 -> 1,000,000)
+ * Allows optional decimals up to 2 decimal places.
+ */
+export function formatAmountInput(value: string | number | null | undefined): string {
+  if (value === '' || value === null || value === undefined) return '';
+  const str = String(value).trim();
+  if (str === '') return '';
+
+  const hasDot = str.includes('.');
+  let [intStr, decStr] = str.split('.');
+
+  // Keep only digits in integer part
+  intStr = (intStr || '').replace(/\D/g, '');
+
+  // Strip leading zeros unless it's just '0'
+  if (intStr.length > 1) {
+    intStr = intStr.replace(/^0+/, '') || '0';
+  }
+
+  // Format integer with commas
+  const formattedInt = intStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  if (hasDot) {
+    const safeInt = formattedInt === '' ? '0' : formattedInt;
+    const cleanDec = decStr !== undefined ? decStr.replace(/\D/g, '').slice(0, 2) : '';
+    return `${safeInt}.${cleanDec}`;
+  }
+
+  return formattedInt;
+}
+
+/**
+ * Parses a masked currency/amount string back into a numeric value (e.g. "5,000" -> 5000, "1,000.5" -> 1000.5)
+ */
+export function parseAmountInput(value: string | number | null | undefined): number {
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  if (!value) return 0;
+  const cleaned = String(value).replace(/,/g, '').trim();
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}

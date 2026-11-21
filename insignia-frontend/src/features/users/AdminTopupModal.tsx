@@ -6,6 +6,7 @@ import { UserAvatar } from './UserAvatar';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatNumber } from '@/utils/formatters';
+import { formatAmountInput, parseAmountInput } from '@/utils/masking';
 import { normalizeApiError } from '@/services/api/client';
 import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { X, CheckCircle2, PlusCircle, Wallet, ShieldCheck } from 'lucide-react';
@@ -25,12 +26,12 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
 }) => {
   const queryClient = useQueryClient();
 
-  const [amountInput, setAmountInput] = useState<string>('1000');
+  const [amountInput, setAmountInput] = useState<string>('1,000');
   const [notes, setNotes] = useState<string>('Admin credit adjustment');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const numericAmount = Math.max(0, parseFloat(amountInput) || 0);
+  const numericAmount = Math.max(0, parseAmountInput(amountInput));
   const currentBalance = user.balance;
   const balanceAfter = currentBalance + numericAmount;
 
@@ -182,11 +183,10 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
               </div>
               <input
                 id="topup-amount"
-                type="number"
-                min="1"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 value={amountInput}
-                onChange={(e) => setAmountInput(e.target.value)}
+                onChange={(e) => setAmountInput(formatAmountInput(e.target.value))}
                 placeholder="0"
                 required
                 disabled={mutation.isPending}
@@ -204,7 +204,7 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
                 <button
                   key={val}
                   type="button"
-                  onClick={() => setAmountInput(String(val))}
+                  onClick={() => setAmountInput(formatAmountInput(val))}
                   disabled={mutation.isPending}
                   className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors ${
                     numericAmount === val

@@ -6,6 +6,7 @@ import { UserAvatar } from './UserAvatar';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatNumber, formatWalletUnits } from '@/utils/formatters';
+import { formatAmountInput, parseAmountInput } from '@/utils/masking';
 import { normalizeApiError } from '@/services/api/client';
 import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { X, Search, ChevronDown, CheckCircle2, AlertTriangle, ArrowRight, Info, Check } from 'lucide-react';
@@ -36,7 +37,7 @@ export const TransferBalanceModal: React.FC<TransferBalanceModalProps> = ({
     return potentialRecipients[0] || null;
   });
 
-  const [amountInput, setAmountInput] = useState<string>('2500');
+  const [amountInput, setAmountInput] = useState<string>('2,500');
   const [notes, setNotes] = useState<string>('Project payment');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [recipientSearch, setRecipientSearch] = useState('');
@@ -44,7 +45,7 @@ export const TransferBalanceModal: React.FC<TransferBalanceModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const numericAmount = Math.max(0, parseFloat(amountInput) || 0);
+  const numericAmount = Math.max(0, parseAmountInput(amountInput));
   const maxAvailable = currentUser.balance;
   const balanceAfter = Math.max(0, maxAvailable - numericAmount);
 
@@ -341,10 +342,10 @@ export const TransferBalanceModal: React.FC<TransferBalanceModalProps> = ({
                 <div className="relative flex items-center">
                   <input
                     id="transferAmountInput"
-                    type="number"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     value={amountInput}
-                    onChange={(e) => setAmountInput(e.target.value)}
+                    onChange={(e) => setAmountInput(formatAmountInput(e.target.value))}
                     placeholder="2,500"
                     className="w-full bg-white text-navy-900 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm transition-colors hover:border-slate-400 focus-ring font-mono font-bold pr-16"
                   />
