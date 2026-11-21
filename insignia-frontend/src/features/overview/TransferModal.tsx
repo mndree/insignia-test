@@ -269,9 +269,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 </span>
                 <p className="font-bold text-navy-900 text-sm">{fromUser?.fullName}</p>
                 <p className="font-mono text-slate-500">@{fromUser?.username}</p>
-                <div className="pt-1 text-[11px] text-slate-600">
-                  Balance After: <span className="font-mono font-bold text-navy-900">{formatNumber(senderBalanceAfter)} units</span>
-                </div>
               </div>
 
               {/* Recipient Details */}
@@ -281,16 +278,13 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                 </span>
                 <p className="font-bold text-navy-900 text-sm">{toUser?.fullName}</p>
                 <p className="font-mono text-slate-500">@{toUser?.username}</p>
-                <div className="pt-1 text-[11px] text-slate-600">
-                  Balance After: <span className="font-mono font-bold text-emerald-700">{formatNumber(recipientBalanceAfter)} units</span>
-                </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between py-1 text-sm">
               <span className="text-slate-500 font-medium">Transfer Amount:</span>
-              <span className="font-bold font-mono text-outgoing text-base">
-                -{formatWalletUnits(numericAmount)}
+              <span className="font-bold font-mono text-emerald-600 text-base">
+                {formatWalletUnits(numericAmount)}
               </span>
             </div>
 
