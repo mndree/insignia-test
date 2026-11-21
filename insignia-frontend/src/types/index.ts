@@ -214,12 +214,16 @@ export interface UserDetailsResponseDto {
 }
 
 export interface UpdateUserProfileDto {
+  userCode?: string;
+  username?: string;
   fullName?: string;
   email?: string;
   phone?: string;
   dateOfBirth?: string;
   address?: string;
   status?: 'Active' | 'Inactive';
+  balance?: number;
+  password?: string;
 }
 
 export interface AdminTransferRequestDto {

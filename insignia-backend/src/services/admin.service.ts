@@ -390,16 +390,63 @@ export class AdminService {
       throw new NotFoundException(`User '${id}' not found`);
     }
 
+    const dataToUpdate: any = {};
+
+    if (dto.fullName !== undefined) dataToUpdate.fullName = dto.fullName?.trim() || null;
+    if (dto.email !== undefined) dataToUpdate.email = dto.email?.trim() || null;
+    if (dto.phone !== undefined) dataToUpdate.phone = dto.phone?.trim() || null;
+    if (dto.dateOfBirth !== undefined) dataToUpdate.dateOfBirth = dto.dateOfBirth?.trim() || null;
+    if (dto.address !== undefined) dataToUpdate.address = dto.address?.trim() || null;
+    if (dto.status !== undefined) dataToUpdate.status = dto.status;
+
+    // Optional userCode update with uniqueness check
+    if (dto.userCode !== undefined && dto.userCode.trim()) {
+      const cleanCode = dto.userCode.trim();
+      if (cleanCode !== user.userCode) {
+        const codeConflict = await prisma.user.findUnique({
+          where: { userCode: cleanCode },
+        });
+        if (codeConflict && codeConflict.id !== user.id) {
+          throw new ConflictException(`User Code '${cleanCode}' is already in use`);
+        }
+        dataToUpdate.userCode = cleanCode;
+      }
+    }
+
+    // Optional username update with dual-table uniqueness check
+    if (dto.username !== undefined && dto.username.trim()) {
+      const cleanUsername = dto.username.trim();
+      if (cleanUsername.toLowerCase() !== user.username.toLowerCase()) {
+        const userConflict = await prisma.user.findFirst({
+          where: { username: { equals: cleanUsername, mode: 'insensitive' } },
+        });
+        const adminConflict = await prisma.admin.findFirst({
+          where: { username: { equals: cleanUsername, mode: 'insensitive' } },
+        });
+        if (userConflict || adminConflict) {
+          throw new ConflictException(`Username '${dto.username}' already exists`);
+        }
+        dataToUpdate.username = cleanUsername;
+      }
+    }
+
+    // Optional balance adjustment
+    if (dto.balance !== undefined && dto.balance !== null && dto.balance !== '') {
+      const numBalance = Number(dto.balance);
+      if (!isNaN(numBalance) && numBalance >= 0) {
+        dataToUpdate.balance = new Prisma.Decimal(numBalance);
+      }
+    }
+
+    // Optional password reset
+    if (dto.password && dto.password.trim()) {
+      const hashedPassword = await bcrypt.hash(dto.password.trim(), 10);
+      dataToUpdate.password = hashedPassword;
+    }
+
     const updated = await prisma.user.update({
       where: { id: user.id },
-      data: {
-        ...(dto.fullName !== undefined && { fullName: dto.fullName }),
-        ...(dto.email !== undefined && { email: dto.email }),
-        ...(dto.phone !== undefined && { phone: dto.phone }),
-        ...(dto.dateOfBirth !== undefined && { dateOfBirth: dto.dateOfBirth }),
-        ...(dto.address !== undefined && { address: dto.address }),
-        ...(dto.status !== undefined && { status: dto.status }),
-      },
+      data: dataToUpdate,
     });
 
     return updated;
