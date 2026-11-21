@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/useAuth';
-import { getUsersListApi, adminTransferBalanceApi } from '@/services/api/endpoints';
+import { getUsersListApi, adminTransferBalanceApi, transferApi } from '@/services/api/endpoints';
 import { UserListItemDto } from '@/types';
 import { UserSelect } from '@/components/ui/UserSelect';
+import { UserAvatar } from '@/features/users/UserAvatar';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
@@ -28,18 +29,21 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
 
-  // Modal is restricted exclusively to Admin
-  const isAdmin = !authUser || authUser.role === 'ADMIN';
+  // Check role: admin vs regular user
+  const isUser = authUser?.role === 'USER';
+  const isAdmin = !isUser;
 
   // Fetch all users for From and To Select2 dropdowns (strictly excluding admin)
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['admin_users_all'],
     queryFn: () => getUsersListApi({ pageSize: 200 }),
-    enabled: isOpen && isAdmin,
+    enabled: isOpen,
   });
 
   const availableUsers: UserListItemDto[] = (usersData?.items || []).filter(
-    (u) => u.username.toLowerCase() !== 'admin'
+    (u) =>
+      u.username.toLowerCase() !== 'admin' &&
+      (!isUser || u.username.toLowerCase() !== authUser?.username.toLowerCase())
   );
 
   const [fromUser, setFromUser] = useState<UserListItemDto | null>(null);
@@ -53,27 +57,40 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   // Set intelligent defaults once users list loads (only regular users, never admin)
   useEffect(() => {
     if (availableUsers.length > 0) {
-      const defaultSender =
-        fromUser ||
-        availableUsers.find((u) => u.balance > 0) ||
-        availableUsers[0];
-
-      if (!fromUser && defaultSender) {
-        setFromUser(defaultSender);
+      let currentSender = fromUser;
+      if (!currentSender) {
+        currentSender = isUser && authUser
+          ? {
+              id: (authUser as any).id || (authUser as any).sub || authUser.username,
+              userCode: (authUser as any).userCode || 'USR-0001',
+              username: authUser.username,
+              fullName: authUser.fullName || authUser.username,
+              email: (authUser as any).email || `${authUser.username}@example.com`,
+              phone: '',
+              dateOfBirth: '',
+              address: '',
+              avatarUrl: (authUser as any).avatarUrl || null,
+              status: 'Active',
+              balance: initialCurrentBalance ?? 0,
+              createdAt: '',
+              lastLoginAt: '',
+            }
+          : availableUsers.find((u) => u.balance > 0) || availableUsers[0];
+        setFromUser(currentSender);
       }
 
-      if (!toUser && defaultSender) {
+      if (!toUser && currentSender) {
         const defaultRecipient = availableUsers.find(
           (u) =>
-            u.id !== defaultSender.id &&
-            u.username.toLowerCase() !== defaultSender.username.toLowerCase()
+            u.id !== currentSender.id &&
+            u.username.toLowerCase() !== currentSender.username.toLowerCase()
         );
         if (defaultRecipient) {
           setToUser(defaultRecipient);
         }
       }
     }
-  }, [availableUsers, fromUser, toUser]);
+  }, [availableUsers, fromUser, toUser, isUser, authUser, initialCurrentBalance]);
 
   // Keep sender balance updated
   const senderBalance = fromUser ? fromUser.balance : (initialCurrentBalance ?? 0);
@@ -82,12 +99,26 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const recipientBalanceAfter = toUser ? toUser.balance + numericAmount : 0;
 
   const mutation = useMutation({
-    mutationFn: (data: { fromUserId: string; to_username: string; amount: number; notes?: string }) =>
-      adminTransferBalanceApi(data.fromUserId, {
-        to_username: data.to_username,
-        amount: data.amount,
-        notes: data.notes,
-      }),
+    mutationFn: async (data: { fromUserId?: string; to_username: string; amount: number; notes?: string }) => {
+      if (isAdmin && data.fromUserId) {
+        return adminTransferBalanceApi(data.fromUserId, {
+          to_username: data.to_username,
+          amount: data.amount,
+          notes: data.notes,
+        });
+      } else {
+        await transferApi({
+          to_username: data.to_username,
+          amount: data.amount,
+        });
+        return {
+          success: true,
+          transferCode: `TXN-${Date.now().toString().slice(-4)}`,
+          amount: data.amount,
+          senderBalanceAfter: Math.max(0, senderBalance - data.amount),
+        };
+      }
+    },
     onSuccess: (data) => {
       setSuccessMessage(
         `Successfully transferred ${formatWalletUnits(data.amount)} from @${fromUser?.username} to @${toUser?.username}! (Code: ${data.transferCode || 'TXN-OK'})`
@@ -106,6 +137,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ['admin_users'] });
       queryClient.invalidateQueries({ queryKey: ['admin_users_all'] });
       queryClient.invalidateQueries({ queryKey: ['admin_user_details'] });
+      queryClient.invalidateQueries({ queryKey: ['admin_profile'] });
 
       setTimeout(() => {
         setSuccessMessage(null);
@@ -120,8 +152,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     },
   });
 
-  // Guard: If modal is not open or user is not Admin, do not render
-  if (!isOpen || !isAdmin) {
+  // Guard: If modal is not open, do not render
+  if (!isOpen) {
     return null;
   }
 
@@ -188,17 +220,21 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       description={
         isReviewStep
           ? 'Please review the sender and recipient details before finalizing the transfer.'
-          : 'Admin transfer between registered accounts. Select sender and recipient from dropdowns.'
+          : isAdmin
+          ? 'Admin transfer between registered accounts. Select sender and recipient from dropdowns.'
+          : 'Send wallet units to another registered user account.'
       }
       size="lg"
     >
       {/* Admin Badge */}
-      <div className="mb-4 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-brand-700 border border-indigo-100">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          Admin Controlled Transfer
-        </span>
-      </div>
+      {isAdmin && (
+        <div className="mb-4 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-brand-700 border border-indigo-100">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Admin Controlled Transfer
+          </span>
+        </div>
+      )}
 
       {errorMessage && (
         <Alert
@@ -296,22 +332,50 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       ) : (
         /* Form Step */
         <form onSubmit={handleReview} className="space-y-4">
-          {/* 1. FROM USER (Searchable Dropdown) */}
-          <UserSelect
-            label="From (Sender Account)"
-            users={availableUsers}
-            selectedUser={fromUser}
-            onSelect={(selected) => {
-              setFromUser(selected);
-              if (toUser && toUser.id === selected.id) {
-                setToUser(null);
-              }
-            }}
-            excludeUserId={toUser?.id}
-            placeholder={isLoadingUsers ? 'Loading registered users...' : 'Search & select sender...'}
-            required
-            disabled={mutation.isPending || isLoadingUsers}
-          />
+          {/* 1. FROM USER (Searchable Dropdown for Admin, fixed profile card for User) */}
+          {isAdmin ? (
+            <UserSelect
+              label="From (Sender Account)"
+              users={availableUsers}
+              selectedUser={fromUser}
+              onSelect={(selected) => {
+                setFromUser(selected);
+                if (toUser && toUser.id === selected.id) {
+                  setToUser(null);
+                }
+              }}
+              excludeUserId={toUser?.id}
+              placeholder={isLoadingUsers ? 'Loading registered users...' : 'Search & select sender...'}
+              required
+              disabled={mutation.isPending || isLoadingUsers}
+            />
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold text-navy-900 mb-1.5">
+                From (Sender Account)
+              </label>
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/80">
+                <UserAvatar
+                  name={authUser?.fullName || authUser?.username || 'You'}
+                  size="sm"
+                  avatarUrl={(authUser as any)?.avatarUrl}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-navy-900 truncate">
+                      {authUser?.fullName || authUser?.username}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400">
+                      @{authUser?.username}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-brand-600 font-semibold">
+                    Available: {formatWalletUnits(senderBalance)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Dynamic Available Balance Banner */}
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">

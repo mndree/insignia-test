@@ -13,12 +13,9 @@ import { TransactionDirection } from '@/types';
 import { APP_CONFIG } from '@/app/config';
 import { normalizeApiError } from '@/services/api/client';
 import { RefreshCw, FileText, AlertTriangle, Send } from 'lucide-react';
-import { useAuth } from '@/features/auth/useAuth';
 import { TransferModal } from '@/features/overview/TransferModal';
 
 export const TransactionsPage: React.FC = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'ADMIN';
   const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
   const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
   const [searchParams, setSearchParams] = useSearchParams();
@@ -175,17 +172,15 @@ export const TransactionsPage: React.FC = () => {
         description="Comprehensive paginated transaction ledger with search and filters"
         actions={
           <div className="flex items-center gap-2.5">
-            {isAdmin && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setIsTransferModalOpen(true)}
-                className="bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-xs flex items-center gap-1.5"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Transfer Balance</span>
-              </Button>
-            )}
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsTransferModalOpen(true)}
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-xs flex items-center gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Transfer Balance</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"

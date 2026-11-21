@@ -70,7 +70,7 @@ export const OverviewPage: React.FC = () => {
         onOpenTopup={() => setIsTopupOpen(true)}
         onOpenTransfer={() => setIsTransferOpen(true)}
         canTopup={user?.role === 'ADMIN'}
-        canTransfer={user?.role === 'ADMIN'}
+        canTransfer={true}
       />
 
       {/* Visual Analytics / Charts */}
