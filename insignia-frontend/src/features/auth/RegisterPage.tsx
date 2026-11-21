@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from './useAuth';
 import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { checkUsernameApi } from '@/services/api/endpoints';
 import { formatPhoneNumber } from '@/utils/masking';
 import { cn } from '@/utils/cn';
@@ -159,12 +160,17 @@ export const RegisterPage: React.FC = () => {
       });
 
       setSuccess(true);
+      showSuccessAlert(
+        'Registration Successful!',
+        'Your account and wallet have been created successfully!'
+      );
       setTimeout(() => {
         navigate('/users', { replace: true });
       }, 1500);
     } catch (err) {
       const normalized = normalizeApiError(err);
       setStepError(normalized.message);
+      showErrorAlert('Registration Failed', normalized.message);
     } finally {
       setIsSubmitting(false);
     }

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatNumber, formatWalletUnits } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { X, Search, ChevronDown, CheckCircle2, AlertTriangle, ArrowRight, Info, Check } from 'lucide-react';
 
 interface TransferBalanceModalProps {
@@ -61,6 +62,10 @@ export const TransferBalanceModal: React.FC<TransferBalanceModalProps> = ({
       setSuccessMessage(
         `Transferred ${formatWalletUnits(data.amount)} to @${selectedRecipient?.username} successfully!`
       );
+      showSuccessAlert(
+        'Transfer Successful!',
+        `Transferred ${formatWalletUnits(data.amount)} to @${selectedRecipient?.username} successfully!`
+      );
       queryClient.invalidateQueries({ queryKey: ['admin_user_details', currentUser.id] });
       queryClient.invalidateQueries({ queryKey: ['admin_user_details', currentUser.username] });
       queryClient.invalidateQueries({ queryKey: ['admin_users'] });
@@ -74,7 +79,9 @@ export const TransferBalanceModal: React.FC<TransferBalanceModalProps> = ({
       }, 1500);
     },
     onError: (err) => {
-      setErrorMessage(normalizeApiError(err).message);
+      const normalized = normalizeApiError(err);
+      setErrorMessage(normalized.message);
+      showErrorAlert('Transfer Failed', normalized.message);
     },
   });
 

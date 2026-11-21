@@ -7,6 +7,7 @@ import { Alert } from '@/components/ui/Alert';
 import { getAdminProfileApi, updateAdminProfileApi } from '@/services/api/endpoints';
 import { normalizeApiError } from '@/services/api/client';
 import { formatPhoneNumber } from '@/utils/masking';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { ChevronDown, CheckCircle2 } from 'lucide-react';
 
 interface ChangeBiodataModalProps {
@@ -57,7 +58,9 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Photo file size must be less than 5MB.');
+      const msg = 'Photo file size must be less than 5MB.';
+      setErrorMessage(msg);
+      showErrorAlert('File Too Large', msg);
       return;
     }
 
@@ -102,6 +105,7 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
     mutationFn: (data: any) => updateAdminProfileApi(username, data),
     onSuccess: () => {
       setSuccessMessage('Biodata updated successfully!');
+      showSuccessAlert('Biodata Updated', 'Your personal information has been saved successfully.');
       queryClient.invalidateQueries({ queryKey: ['admin_profile'] });
       queryClient.invalidateQueries({ queryKey: ['admin_user_details'] });
       queryClient.invalidateQueries({ queryKey: ['admin_users'] });
@@ -111,7 +115,9 @@ export const ChangeBiodataModal: React.FC<ChangeBiodataModalProps> = ({
       }, 1200);
     },
     onError: (err) => {
-      setErrorMessage(normalizeApiError(err).message);
+      const normalized = normalizeApiError(err);
+      setErrorMessage(normalized.message);
+      showErrorAlert('Update Failed', normalized.message);
     },
   });
 

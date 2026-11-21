@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatNumber } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { PlusCircle, Wallet, CheckCircle2 } from 'lucide-react';
 
 interface TopupModalProps {
@@ -41,6 +42,7 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
     mutationFn: topupApi,
     onSuccess: (_, variables) => {
       setSuccessMessage(`Successfully added ${formatNumber(variables.amount)} wallet units!`);
+      showSuccessAlert('Top-up Successful!', `Successfully added ${formatNumber(variables.amount)} wallet units to your account.`);
       // Invalidate balance and transaction queries
       queryClient.invalidateQueries({ queryKey: ['balance'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -54,6 +56,7 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
     onError: (err) => {
       const normalized = normalizeApiError(err);
       setErrorMessage(normalized.message);
+      showErrorAlert('Top-up Failed', normalized.message);
     },
   });
 

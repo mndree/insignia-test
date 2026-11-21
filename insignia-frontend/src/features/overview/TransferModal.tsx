@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatWalletUnits, formatNumber } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { Send, ArrowRight, CheckCircle2, AlertTriangle, ShieldCheck, Wallet } from 'lucide-react';
 
 interface TransferModalProps {
@@ -91,6 +92,10 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       setSuccessMessage(
         `Successfully transferred ${formatWalletUnits(data.amount)} from @${fromUser?.username} to @${toUser?.username}! (Code: ${data.transferCode || 'TXN-OK'})`
       );
+      showSuccessAlert(
+        'Transfer Successful!',
+        `Successfully transferred ${formatWalletUnits(data.amount)} from @${fromUser?.username} to @${toUser?.username}!`
+      );
 
       // Invalidate all related financial & transaction queries
       queryClient.invalidateQueries({ queryKey: ['balance'] });
@@ -111,6 +116,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     onError: (err) => {
       const normalized = normalizeApiError(err);
       setErrorMessage(normalized.message);
+      showErrorAlert('Transfer Failed', normalized.message);
     },
   });
 

@@ -8,6 +8,7 @@ import { DatePickerInput } from '@/components/ui/DatePickerInput';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { formatPhoneNumber } from '@/utils/masking';
 import {
   User,
@@ -56,6 +57,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       updateUserProfileApi(user.id, data),
     onSuccess: () => {
       setSuccessMessage('User profile updated successfully!');
+      showSuccessAlert('Profile Updated', 'User profile updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['admin_user_details', user.id] });
       queryClient.invalidateQueries({ queryKey: ['admin_user_details', user.username] });
       queryClient.invalidateQueries({ queryKey: ['admin_users'] });
@@ -65,7 +67,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       }, 1200);
     },
     onError: (err) => {
-      setErrorMessage(normalizeApiError(err).message);
+      const normalized = normalizeApiError(err);
+      setErrorMessage(normalized.message);
+      showErrorAlert('Update Failed', normalized.message);
     },
   });
 

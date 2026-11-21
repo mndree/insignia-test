@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { changePasswordApi } from '@/services/api/endpoints';
 import { normalizeApiError } from '@/services/api/client';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { Lock, Eye, EyeOff, Info, CheckCircle2 } from 'lucide-react';
 
 interface ChangePasswordModalProps {
@@ -34,6 +35,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       changePasswordApi(dto),
     onSuccess: () => {
       setSuccessMessage('Password changed successfully!');
+      showSuccessAlert('Password Changed', 'Your account password has been updated successfully.');
       setTimeout(() => {
         setSuccessMessage(null);
         setCurrentPassword('');
@@ -43,7 +45,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       }, 1200);
     },
     onError: (err) => {
-      setErrorMessage(normalizeApiError(err).message);
+      const normalized = normalizeApiError(err);
+      setErrorMessage(normalized.message);
+      showErrorAlert('Password Update Failed', normalized.message);
     },
   });
 
@@ -53,17 +57,23 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     setSuccessMessage(null);
 
     if (!newPassword || newPassword.length < 8) {
-      setErrorMessage('Use at least 8 characters with uppercase, lowercase, numbers, and symbols.');
+      const msg = 'Use at least 8 characters with uppercase, lowercase, numbers, and symbols.';
+      setErrorMessage(msg);
+      showErrorAlert('Validation Error', msg);
       return;
     }
 
     if (currentPassword && newPassword === currentPassword) {
-      setErrorMessage('Your new password must be different from your current password.');
+      const msg = 'Your new password must be different from your current password.';
+      setErrorMessage(msg);
+      showErrorAlert('Validation Error', msg);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setErrorMessage('New password and confirmation password do not match.');
+      const msg = 'New password and confirmation password do not match.';
+      setErrorMessage(msg);
+      showErrorAlert('Validation Error', msg);
       return;
     }
 

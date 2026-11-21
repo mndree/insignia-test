@@ -12,6 +12,7 @@ import { DemoBadge } from '@/components/ui/DemoBadge';
 import { APP_CONFIG } from '@/app/config';
 import { Eye, EyeOff, Lock, User, KeyRound, ExternalLink } from 'lucide-react';
 import { normalizeApiError } from '@/services/api/client';
+import { showErrorAlert } from '@/utils/sweetalert';
 import insigniaLogo from '@/assets/logo.png';
 
 export const LoginPage: React.FC = () => {
@@ -53,6 +54,7 @@ export const LoginPage: React.FC = () => {
     } catch (err) {
       const normalized = normalizeApiError(err);
       setErrorMessage(normalized.message);
+      showErrorAlert('Sign In Failed', normalized.message);
     } finally {
       setIsSubmitting(false);
     }

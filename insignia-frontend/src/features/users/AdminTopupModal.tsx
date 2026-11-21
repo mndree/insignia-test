@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { formatNumber } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
+import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
 import { X, CheckCircle2, PlusCircle, Wallet, ShieldCheck } from 'lucide-react';
 
 interface AdminTopupModalProps {
@@ -40,6 +41,10 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
       setSuccessMessage(
         `Successfully credited ${formatNumber(data.amount)} units to @${user.username}! (Code: ${data.topupCode || 'TOP-OK'})`
       );
+      showSuccessAlert(
+        'Top-up Successful!',
+        `Successfully credited ${formatNumber(data.amount)} units to @${user.username}!`
+      );
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['admin_user_details', user.id] });
       queryClient.invalidateQueries({ queryKey: ['admin_user_details', user.username] });
@@ -55,6 +60,7 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
     onError: (err) => {
       const normalized = normalizeApiError(err);
       setErrorMessage(normalized.message);
+      showErrorAlert('Top-up Failed', normalized.message);
     },
   });
 
