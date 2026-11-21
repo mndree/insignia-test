@@ -1,43 +1,24 @@
+import bcrypt from 'bcryptjs';
+import { prisma } from '../prisma.js';
+import { signJwt } from '../auth/jwt.js';
 import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+  NotFoundException,
+  ConflictException,
+} from '../errors.js';
 import { Prisma } from '@prisma/client';
 import type { User } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import { PrismaService } from '../prisma/prisma.service.js';
-import { RegisterUserDto } from './dto/register-user.dto.js';
-import { TopupDto } from './dto/topup.dto.js';
-import { TransferDto } from './dto/transfer.dto.js';
-import {
-  TokenResponseDto,
-  BalanceResponseDto,
-  TransactionItemDto,
-  TopUserItemDto,
-  PaginatedTransactionsResponseDto,
-  TransactionRecordDto,
-} from './dto/response.dto.js';
-import { TransactionsQueryDto } from './dto/transactions-query.dto.js';
 
-@Injectable()
 export class WalletService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-  ) {}
-
   async checkUsername(username: string): Promise<{ exists: boolean; available: boolean; message: string }> {
     const cleanUsername = (username || '').trim().toLowerCase();
     if (!cleanUsername) {
       return { exists: false, available: true, message: 'Username is empty' };
     }
-    const existingUser = await this.prisma.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { username: cleanUsername },
     });
-    const existingAdmin = await this.prisma.admin.findUnique({
+    const existingAdmin = await prisma.admin.findUnique({
       where: { username: cleanUsername },
     });
 
@@ -51,9 +32,21 @@ export class WalletService {
     };
   }
 
-  async register(dto: RegisterUserDto): Promise<TokenResponseDto> {
+  async register(dto: {
+    username?: string;
+    password?: string;
+    fullName?: string;
+    dateOfBirth?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  }): Promise<{ token: string }> {
+    if (!dto.username || !dto.username.trim()) {
+      throw new BadRequestException('Username is required');
+    }
+
     const cleanUsername = dto.username.trim().toLowerCase();
-    const existing = await this.prisma.user.findUnique({
+    const existing = await prisma.user.findUnique({
       where: { username: cleanUsername },
     });
 
@@ -66,15 +59,14 @@ export class WalletService {
       hashedPassword = await bcrypt.hash(dto.password.trim(), 10);
     }
 
-    // Generate unique USR-XXXX code
-    const totalUsers = await this.prisma.user.count();
+    const totalUsers = await prisma.user.count();
     let userCode = `USR-${String(totalUsers + 1).padStart(4, '0')}`;
-    const codeExists = await this.prisma.user.findUnique({ where: { userCode } });
+    const codeExists = await prisma.user.findUnique({ where: { userCode } });
     if (codeExists) {
       userCode = `USR-${Date.now().toString().slice(-4)}`;
     }
 
-    const user = await this.prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         username: cleanUsername,
         password: hashedPassword,
@@ -89,7 +81,7 @@ export class WalletService {
       },
     });
 
-    const token = this.jwtService.sign({
+    const token = signJwt({
       sub: user.id,
       username: user.username,
     });
@@ -97,10 +89,15 @@ export class WalletService {
     return { token };
   }
 
-  async topup(user: User, dto: TopupDto): Promise<void> {
-    const decimalAmount = new Prisma.Decimal(dto.amount);
+  async topup(user: User, dto: { amount?: number | string }): Promise<void> {
+    const numAmount = Number(dto.amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      throw new BadRequestException('Topup amount must be greater than 0');
+    }
 
-    await this.prisma.$transaction(async (tx) => {
+    const decimalAmount = new Prisma.Decimal(numAmount);
+
+    await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: user.id },
         data: {
@@ -119,8 +116,8 @@ export class WalletService {
     });
   }
 
-  async getBalance(userId: string): Promise<BalanceResponseDto> {
-    const user = await this.prisma.user.findUnique({
+  async getBalance(userId: string): Promise<{ balance: number }> {
+    const user = await prisma.user.findUnique({
       where: { id: userId },
     });
 
@@ -133,12 +130,16 @@ export class WalletService {
     };
   }
 
-  async transfer(sender: User, dto: TransferDto): Promise<void> {
+  async transfer(sender: User, dto: { to_username?: string; amount?: number | string }): Promise<void> {
+    if (!dto.to_username) {
+      throw new BadRequestException('Recipient username is required');
+    }
+
     if (sender.username === dto.to_username) {
       throw new BadRequestException('Cannot transfer to yourself');
     }
 
-    const recipient = await this.prisma.user.findUnique({
+    const recipient = await prisma.user.findUnique({
       where: { username: dto.to_username },
     });
 
@@ -146,10 +147,14 @@ export class WalletService {
       throw new NotFoundException(`Recipient '${dto.to_username}' not found`);
     }
 
-    const decimalAmount = new Prisma.Decimal(dto.amount);
+    const numAmount = Number(dto.amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      throw new BadRequestException('Transfer amount must be greater than 0');
+    }
 
-    await this.prisma.$transaction(async (tx) => {
-      // Fetch latest sender state with lock
+    const decimalAmount = new Prisma.Decimal(numAmount);
+
+    await prisma.$transaction(async (tx) => {
       const currentSender = await tx.user.findUnique({
         where: { id: sender.id },
       });
@@ -186,8 +191,8 @@ export class WalletService {
     });
   }
 
-  async getTopTransactionsPerUser(user: User): Promise<TransactionItemDto[]> {
-    const transfers = await this.prisma.transfer.findMany({
+  async getTopTransactionsPerUser(user: User): Promise<Array<{ username: string; amount: number }>> {
+    const transfers = await prisma.transfer.findMany({
       where: {
         OR: [{ fromUserId: user.id }, { toUserId: user.id }],
       },
@@ -211,7 +216,6 @@ export class WalletService {
       };
     });
 
-    // Sort by absolute amount descending, tie-break by createdAt descending
     formatted.sort((a, b) => {
       if (b.absAmount !== a.absAmount) {
         return b.absAmount - a.absAmount;
@@ -219,15 +223,14 @@ export class WalletService {
       return b.createdAt - a.createdAt;
     });
 
-    // Return at most 10 transfers
     return formatted.slice(0, 10).map(({ username, amount }) => ({
       username,
       amount,
     }));
   }
 
-  async getTopUsers(): Promise<TopUserItemDto[]> {
-    const groups = await this.prisma.transfer.groupBy({
+  async getTopUsers(): Promise<Array<{ username: string; transacted_value: number }>> {
+    const groups = await prisma.transfer.groupBy({
       by: ['fromUserId'],
       _sum: {
         amount: true,
@@ -249,7 +252,7 @@ export class WalletService {
     }
 
     const userIds = activeGroups.map((g) => g.fromUserId);
-    const users = await this.prisma.user.findMany({
+    const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
     });
 
@@ -261,16 +264,12 @@ export class WalletService {
     }));
   }
 
-  async getTransactions(
-    user: User,
-    query: TransactionsQueryDto,
-  ): Promise<PaginatedTransactionsResponseDto> {
+  async getTransactions(user: User, query: any) {
     const page = Math.max(1, Number(query.page) || 1);
     const pageSize = Math.max(1, Number(query.pageSize) || 10);
     const isAdmin = user.username === 'admin';
 
-    // 1. Fetch transfers
-    const transfers = await this.prisma.transfer.findMany({
+    const transfers = await prisma.transfer.findMany({
       where: isAdmin
         ? {}
         : {
@@ -283,15 +282,13 @@ export class WalletService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // 2. Fetch topups
-    const topups = await this.prisma.topup.findMany({
+    const topups = await prisma.topup.findMany({
       where: isAdmin ? {} : { userId: user.id },
       include: { user: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    // 3. Format unified transaction records
-    const unified: TransactionRecordDto[] = [];
+    const unified: any[] = [];
 
     for (const tx of transfers) {
       let counterparty = '';
@@ -327,14 +324,12 @@ export class WalletService {
       });
     }
 
-    // Sort by created_at descending
     unified.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    // Apply filters
     let filtered = unified;
 
-    if (query.search && query.search.trim()) {
-      const term = query.search.trim().toLowerCase();
+    if (query.search && String(query.search).trim()) {
+      const term = String(query.search).trim().toLowerCase();
       filtered = filtered.filter(
         (tx) =>
           tx.id.toLowerCase().includes(term) ||
@@ -366,7 +361,7 @@ export class WalletService {
     }
 
     if (query.sortBy) {
-      const field = query.sortBy.toLowerCase();
+      const field = String(query.sortBy).toLowerCase();
       const isAsc = query.sortOrder === 'asc';
       filtered.sort((a, b) => {
         let cmp = 0;
@@ -403,3 +398,5 @@ export class WalletService {
     };
   }
 }
+
+export const walletService = new WalletService();

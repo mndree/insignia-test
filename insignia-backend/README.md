@@ -1,17 +1,17 @@
 # Crypto Wallet Backend API (Stoplight API Implementation)
 
-NestJS REST API matching the assignment Stoplight reference, backed by PostgreSQL (`crypto-wallet`) and Prisma ORM.
+Native Node.js REST API with Express.js matching the assignment Stoplight reference, backed by PostgreSQL (`crypto-wallet`) and Prisma ORM.
 
 ---
 
 ## 🛠️ Stack & Architecture
 
-- **Framework:** NestJS 12 (TypeScript, ESM)
+- **Framework:** Native Node.js + Express.js 5 (TypeScript, ESM)
 - **Database:** PostgreSQL (Database: `crypto-wallet`)
 - **ORM:** Prisma ORM 6
-- **Auth:** Direct Header Token (`Authorization: <token>`, no mandatory Bearer prefix required)
-- **Documentation:** Swagger OpenAPI available at `http://localhost:3000/docs`
-- **Testing:** Supertest + Vitest (Contract E2E), TypeScript & PowerShell Smoke-Test Workflows
+- **Auth:** Direct Header Token (`Authorization: <token>`, or `Bearer <token>`)
+- **Documentation:** Swagger OpenAPI available at `http://localhost:3001/docs`
+- **Testing:** TypeScript & PowerShell Smoke-Test Workflows
 
 ---
 

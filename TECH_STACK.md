@@ -33,24 +33,22 @@ A modern, responsive Single Page Application (SPA) built with React 18 and TypeS
 
 ## 2. Backend Architecture (`insignia-backend`)
 
-An enterprise-grade, modular RESTful API built on the NestJS framework with PostgreSQL persistence via Prisma ORM.
+A robust, lightweight RESTful API built on **native Node.js** with **Express.js 5** and PostgreSQL persistence via **Prisma ORM**.
 
 | Category | Technology / Library | Version | Purpose & Architectural Role |
 | :--- | :--- | :--- | :--- |
-| **Core Framework** | **NestJS** | `^12.0.1` | Progressive Node.js framework utilizing Controllers, Services, Dependency Injection, and Modules. |
-| **HTTP Platform** | **Express** (`@nestjs/platform-express`) | `^12.0.1` | Fast, minimalist web server engine powering NestJS endpoints with JSON and form-data payload limits. |
+| **Core Framework** | **Node.js + Express** | `^5.3.0` | Native Node.js web server platform utilizing Express routers, services, and middlewares. |
 | **Language & Module System** | **TypeScript** (Node.js ESM) | `^6.0.2` | Strict TypeScript with native ECMAScript Modules (`"type": "module"`). |
 | **Database ORM** | **Prisma ORM** (`@prisma/client`) | `^6.19.3` | Auto-generated type-safe database client, declarative schema modeling, and relational migrations. |
-| **API Documentation** | **Swagger / OpenAPI** (`@nestjs/swagger`) | `^12.1.2` | Interactive Swagger OpenAPI documentation and testing sandbox (`/docs` and `/api/docs`). |
-| **Validation & DTOs** | **class-validator** + **class-transformer** | `^0.15.1` / `^0.5.1` | Declarative validation decorators on DTOs, stripping non-whitelisted properties and coercing types. |
-| **Authentication & Tokens** | **@nestjs/jwt** + **jsonwebtoken** | `^12.0.5` / `^9.0.3` | JSON Web Token (JWT) signing, cryptographic verification, and Bearer token security guards. |
+| **API Documentation** | **Swagger / OpenAPI** (`swagger-ui-express`) | `^5.0.1` | Interactive Swagger OpenAPI documentation and testing sandbox (`/docs` and `/api/docs`). |
+| **Authentication & Tokens** | **jsonwebtoken** | `^9.0.3` | JSON Web Token (JWT) signing, cryptographic verification, and Bearer token security middleware. |
 | **Password Security** | **bcryptjs** | `^3.0.3` | Salt-based password hashing for admin profiles and user sign-in credentials. |
-| **Environment Configuration** | **@nestjs/config** | `^12.1.1` | Centralized environment variable loading and validation from `.env`. |
-| **Reactive Programming** | **RxJS** | `^7.8.1` | Reactive event stream handling and asynchronous interceptors. |
+| **Environment Configuration** | **dotenv** | `^18.0.10` | Centralized environment variable loading from `.env`. |
+| **CORS Middleware** | **cors** | `^2.8.6` | Cross-Origin Resource Sharing handling credentials and origin whitelisting. |
 | **Script Execution** | **tsx** | `^4.23.15` | Fast TypeScript execution for database seeding scripts (`seed.ts`) and smoke tests without prior build. |
 | **High-Speed Linting** | **oxlint** | `^1.58.0` | Ultra-fast Rust-based static code analyzer. |
 | **Code Formatting** | **Prettier** | `^3.4.2` | Opinionated code formatter enforcing consistent syntax layout. |
-| **Testing** | **Vitest** + **Supertest** | `^4.1.2` / `^7.0.0` | High-performance test runner for e2e API testing and controller unit tests. |
+| **Testing** | **Vitest** + **Supertest** | `^4.1.2` / `^7.0.0` | High-performance test runner for e2e API testing and route unit tests. |
 
 ---
 

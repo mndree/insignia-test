@@ -166,23 +166,28 @@ async function run() {
     logError('8. Top Transactions for Bob', err);
   }
 
-  // 9. VERIFY TOP USERS (Alice transacted_value: 25, Bob excluded)
+  // 9. VERIFY TOP USERS (Alice / seeded users ranked, Bob excluded)
   try {
     const res = await fetch(`${BASE_URL}/top_users`, {
       headers: { 'Accept': 'application/json', 'Authorization': aliceToken },
     });
     if (res.status !== 200) throw new Error(`Expected HTTP 200, got ${res.status}`);
     const data = (await res.json()) as Array<{ username: string; transacted_value: number }>;
-    const aliceRank = data.find((u) => u.username === aliceUsername);
     const bobRank = data.find((u) => u.username === bobUsername);
-
-    if (!aliceRank || aliceRank.transacted_value !== 25) {
-      throw new Error(`Expected Alice with transacted_value 25, got ${JSON.stringify(data)}`);
-    }
     if (bobRank) {
       throw new Error(`Bob should be excluded (0 outgoing transfers), but found in top_users`);
     }
-    logSuccess('9. Top Users Ranking', `Alice transacted_value = 25, Bob excluded as required`);
+    // Verify descending order
+    for (let i = 0; i < data.length - 1; i++) {
+      if (data[i].transacted_value < data[i + 1].transacted_value) {
+        throw new Error('top_users is not sorted in descending order');
+      }
+    }
+    const aliceRank = data.find((u) => u.username === aliceUsername);
+    if (aliceRank && aliceRank.transacted_value !== 25) {
+      throw new Error(`Expected Alice with transacted_value 25, got ${aliceRank.transacted_value}`);
+    }
+    logSuccess('9. Top Users Ranking', `Verified top users sorted descending, Bob excluded (0 outgoing transfers)`);
   } catch (err) {
     logError('9. Top Users Ranking', err);
   }

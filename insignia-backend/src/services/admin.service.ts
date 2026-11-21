@@ -1,37 +1,18 @@
+import bcrypt from 'bcryptjs';
+import { prisma } from '../prisma.js';
+import { signJwt } from '../auth/jwt.js';
 import {
-  Injectable,
-  ConflictException,
+  BadRequestException,
   UnauthorizedException,
   NotFoundException,
-  BadRequestException,
-  OnModuleInit,
-  Logger,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import bcrypt from 'bcryptjs';
-import { PrismaService } from '../prisma/prisma.service.js';
-import { AdminLoginDto } from './dto/admin-login.dto.js';
-import { AdminRegisterDto } from './dto/admin-register.dto.js';
-import { AdminLoginResponseDto } from './dto/admin-response.dto.js';
-import { UsersQueryDto, UpdateUserDto, AdminTransferDto } from './dto/admin-user.dto.js';
+  ConflictException,
+} from '../errors.js';
 import { Prisma } from '@prisma/client';
 
-@Injectable()
-export class AdminService implements OnModuleInit {
-  private readonly logger = new Logger(AdminService.name);
-
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-  ) {}
-
-  async onModuleInit() {
-    await this.ensureDefaultAdmin();
-  }
-
+export class AdminService {
   async ensureDefaultAdmin() {
     const hashedPassword = await bcrypt.hash('admin123', 10);
-    await this.prisma.admin.upsert({
+    await prisma.admin.upsert({
       where: { username: 'admin' },
       create: {
         username: 'admin',
@@ -53,8 +34,7 @@ export class AdminService implements OnModuleInit {
       },
     });
 
-    // Also ensure a corresponding user record exists for transfers/topups
-    await this.prisma.user.upsert({
+    await prisma.user.upsert({
       where: { username: 'admin' },
       create: {
         userCode: 'USR-0000',
@@ -76,40 +56,44 @@ export class AdminService implements OnModuleInit {
       },
     });
 
-    this.logger.log(`Ensured default admin account: 'admin' / 'admin123' with complete biodata`);
+    console.log(`[AdminService] Ensured default admin account: 'admin' / 'admin123' with complete biodata`);
   }
 
-  async register(dto: AdminRegisterDto): Promise<AdminLoginResponseDto> {
-    const existing = await this.prisma.admin.findUnique({
-      where: { username: dto.username },
+  async register(dto: { username?: string; password?: string }) {
+    if (!dto.username || !dto.password) {
+      throw new BadRequestException('Username and password are required');
+    }
+
+    const cleanUsername = dto.username.trim().toLowerCase();
+    const existing = await prisma.admin.findUnique({
+      where: { username: cleanUsername },
     });
 
     if (existing) {
-      throw new ConflictException(`Admin '${dto.username}' already exists`);
+      throw new ConflictException(`Admin '${cleanUsername}' already exists`);
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const admin = await this.prisma.admin.create({
+    const admin = await prisma.admin.create({
       data: {
-        username: dto.username,
+        username: cleanUsername,
         password: hashedPassword,
       },
     });
 
-    // Ensure corresponding user record
-    const user = await this.prisma.user.upsert({
-      where: { username: dto.username },
+    const user = await prisma.user.upsert({
+      where: { username: cleanUsername },
       create: {
-        username: dto.username,
-        fullName: dto.username,
+        username: cleanUsername,
+        fullName: cleanUsername,
         balance: 1000,
         status: 'Active',
       },
       update: {},
     });
 
-    const token = this.jwtService.sign({
+    const token = signJwt({
       sub: admin.id,
       username: admin.username,
       role: 'ADMIN',
@@ -125,9 +109,16 @@ export class AdminService implements OnModuleInit {
     };
   }
 
-  async login(dto: AdminLoginDto): Promise<AdminLoginResponseDto> {
-    const admin = await this.prisma.admin.findUnique({
-      where: { username: dto.username },
+  async login(dto: { username?: string; password?: string }) {
+    if (!dto.username || !dto.password) {
+      throw new BadRequestException('Username and password are required');
+    }
+
+    const cleanUsername = dto.username.trim();
+
+    // Check if admin login
+    const admin = await prisma.admin.findUnique({
+      where: { username: cleanUsername },
     });
 
     if (admin) {
@@ -136,7 +127,7 @@ export class AdminService implements OnModuleInit {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      const user = await this.prisma.user.upsert({
+      const user = await prisma.user.upsert({
         where: { username: admin.username },
         create: {
           userCode: 'USR-0000',
@@ -148,7 +139,7 @@ export class AdminService implements OnModuleInit {
         update: {},
       });
 
-      const token = this.jwtService.sign({
+      const token = signJwt({
         sub: admin.id,
         username: admin.username,
         role: 'ADMIN',
@@ -167,9 +158,9 @@ export class AdminService implements OnModuleInit {
       };
     }
 
-    // Check if it is a regular user logging in (e.g. andre)
-    const user = await this.prisma.user.findUnique({
-      where: { username: dto.username },
+    // Check if regular user login
+    const user = await prisma.user.findUnique({
+      where: { username: cleanUsername },
     });
 
     if (!user || !user.password) {
@@ -181,7 +172,7 @@ export class AdminService implements OnModuleInit {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = this.jwtService.sign({
+    const token = signJwt({
       sub: user.id,
       username: user.username,
       role: 'USER',
@@ -200,11 +191,7 @@ export class AdminService implements OnModuleInit {
     };
   }
 
-  // ==========================================
-  // Admin User Management Services
-  // ==========================================
-
-  async getUsers(query: UsersQueryDto) {
+  async getUsers(query: any) {
     const page = Math.max(1, Number(query.page) || 1);
     const pageSize = Math.max(1, Number(query.pageSize) || 10);
     const skip = (page - 1) * pageSize;
@@ -213,8 +200,8 @@ export class AdminService implements OnModuleInit {
       username: { not: 'admin' },
     };
 
-    if (query.search && query.search.trim()) {
-      const term = query.search.trim();
+    if (query.search && String(query.search).trim()) {
+      const term = String(query.search).trim();
       where.AND = [
         {
           OR: [
@@ -239,7 +226,7 @@ export class AdminService implements OnModuleInit {
     let orderBy: Prisma.UserOrderByWithRelationInput[] = [{ userCode: 'asc' }, { createdAt: 'desc' }];
 
     if (query.sortBy) {
-      const field = query.sortBy.toLowerCase();
+      const field = String(query.sortBy).toLowerCase();
       if (field === 'user' || field === 'name' || field === 'fullname') {
         orderBy = [{ fullName: orderDirection }, { username: orderDirection }];
       } else if (field === 'email') {
@@ -256,16 +243,16 @@ export class AdminService implements OnModuleInit {
     }
 
     const [items, total, totalUsers, activeUsers, balanceAggregate] = await Promise.all([
-      this.prisma.user.findMany({
+      prisma.user.findMany({
         where,
         skip,
         take: pageSize,
         orderBy,
       }),
-      this.prisma.user.count({ where }),
-      this.prisma.user.count({ where: baseWhere }),
-      this.prisma.user.count({ where: { ...baseWhere, status: 'Active' } }),
-      this.prisma.user.aggregate({
+      prisma.user.count({ where }),
+      prisma.user.count({ where: baseWhere }),
+      prisma.user.count({ where: { ...baseWhere, status: 'Active' } }),
+      prisma.user.aggregate({
         where: baseWhere,
         _sum: {
           balance: true,
@@ -302,7 +289,7 @@ export class AdminService implements OnModuleInit {
   }
 
   async getUserDetails(idOrUsername: string) {
-    const user = await this.prisma.user.findFirst({
+    const user = await prisma.user.findFirst({
       where: {
         OR: [
           { id: idOrUsername },
@@ -326,7 +313,6 @@ export class AdminService implements OnModuleInit {
       throw new NotFoundException(`User '${idOrUsername}' not found`);
     }
 
-    // Calculate total received and total sent
     let totalSent = 0;
     for (const t of user.sentTransfers) {
       totalSent += Number(t.amount);
@@ -337,7 +323,6 @@ export class AdminService implements OnModuleInit {
       totalReceived += Number(t.amount);
     }
 
-    // Combine and sort recent transactions
     const allTransfers = [
       ...user.sentTransfers.map((t) => ({
         id: t.transferCode || t.id.slice(0, 8),
@@ -381,8 +366,8 @@ export class AdminService implements OnModuleInit {
     };
   }
 
-  async updateUser(id: string, dto: UpdateUserDto) {
-    const user = await this.prisma.user.findFirst({
+  async updateUser(id: string, dto: any) {
+    const user = await prisma.user.findFirst({
       where: {
         OR: [{ id }, { username: id }, { userCode: id }],
       },
@@ -392,7 +377,7 @@ export class AdminService implements OnModuleInit {
       throw new NotFoundException(`User '${id}' not found`);
     }
 
-    const updated = await this.prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         ...(dto.fullName !== undefined && { fullName: dto.fullName }),
@@ -407,8 +392,8 @@ export class AdminService implements OnModuleInit {
     return updated;
   }
 
-  async transferUserBalance(fromUserId: string, dto: AdminTransferDto) {
-    const sender = await this.prisma.user.findFirst({
+  async transferUserBalance(fromUserId: string, dto: { to_username?: string; amount?: number | string; notes?: string }) {
+    const sender = await prisma.user.findFirst({
       where: {
         OR: [{ id: fromUserId }, { username: fromUserId }, { userCode: fromUserId }],
       },
@@ -425,11 +410,15 @@ export class AdminService implements OnModuleInit {
 
     if (Number(sender.balance) < amount) {
       throw new BadRequestException(
-        `Insufficient balance. Available: ${sender.balance} units, requested: ${amount} units`
+        `Insufficient balance. Available: ${sender.balance} units, requested: ${amount} units`,
       );
     }
 
-    const recipient = await this.prisma.user.findUnique({
+    if (!dto.to_username) {
+      throw new BadRequestException('Recipient username is required');
+    }
+
+    const recipient = await prisma.user.findUnique({
       where: { username: dto.to_username.trim().toLowerCase() },
     });
 
@@ -441,12 +430,11 @@ export class AdminService implements OnModuleInit {
       throw new BadRequestException('Cannot transfer funds to the same user');
     }
 
-    const transferCount = await this.prisma.transfer.count();
+    const transferCount = await prisma.transfer.count();
     const transferCode = `TXN-${9022 + transferCount}`;
 
-    // Execute atomic balance update and transfer record in transaction
-    const [transfer] = await this.prisma.$transaction([
-      this.prisma.transfer.create({
+    const [transfer] = await prisma.$transaction([
+      prisma.transfer.create({
         data: {
           transferCode,
           fromUserId: sender.id,
@@ -455,11 +443,11 @@ export class AdminService implements OnModuleInit {
           notes: dto.notes,
         },
       }),
-      this.prisma.user.update({
+      prisma.user.update({
         where: { id: sender.id },
         data: { balance: { decrement: amount } },
       }),
-      this.prisma.user.update({
+      prisma.user.update({
         where: { id: recipient.id },
         data: { balance: { increment: amount } },
       }),
@@ -482,7 +470,7 @@ export class AdminService implements OnModuleInit {
       throw new BadRequestException('Password must be at least 8 characters with uppercase, lowercase, numbers, and symbols.');
     }
 
-    const admin = await this.prisma.admin.findUnique({ where: { username } });
+    const admin = await prisma.admin.findUnique({ where: { username } });
     if (admin) {
       if (currentPassword) {
         const isMatch = await bcrypt.compare(currentPassword, admin.password);
@@ -498,15 +486,14 @@ export class AdminService implements OnModuleInit {
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      await this.prisma.admin.update({
+      await prisma.admin.update({
         where: { username },
         data: { password: hashedPassword },
       });
 
-      // Also update in users table if exists
-      const user = await this.prisma.user.findUnique({ where: { username } });
+      const user = await prisma.user.findUnique({ where: { username } });
       if (user) {
-        await this.prisma.user.update({
+        await prisma.user.update({
           where: { username },
           data: { password: hashedPassword },
         });
@@ -522,7 +509,7 @@ export class AdminService implements OnModuleInit {
   }
 
   async getAdminProfile(username: string) {
-    const admin = await this.prisma.admin.findUnique({
+    const admin = await prisma.admin.findUnique({
       where: { username },
     });
 
@@ -541,7 +528,7 @@ export class AdminService implements OnModuleInit {
       };
     }
 
-    const user = await this.prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { username },
     });
 
@@ -564,9 +551,9 @@ export class AdminService implements OnModuleInit {
   }
 
   async updateAdminProfile(username: string, dto: any) {
-    const admin = await this.prisma.admin.findUnique({ where: { username } });
+    const admin = await prisma.admin.findUnique({ where: { username } });
     if (admin) {
-      const updatedAdmin = await this.prisma.admin.update({
+      const updatedAdmin = await prisma.admin.update({
         where: { username },
         data: {
           fullName: dto.fullName !== undefined ? dto.fullName : admin.fullName,
@@ -579,10 +566,9 @@ export class AdminService implements OnModuleInit {
         },
       });
 
-      // Also sync user table
-      const user = await this.prisma.user.findUnique({ where: { username } });
+      const user = await prisma.user.findUnique({ where: { username } });
       if (user) {
-        await this.prisma.user.update({
+        await prisma.user.update({
           where: { username },
           data: {
             fullName: dto.fullName !== undefined ? dto.fullName : user.fullName,
@@ -600,3 +586,5 @@ export class AdminService implements OnModuleInit {
     throw new NotFoundException(`Admin account '${username}' not found`);
   }
 }
+
+export const adminService = new AdminService();
