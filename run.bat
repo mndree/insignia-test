@@ -3,14 +3,21 @@ title Insignia Test Launcher
 cd /d "%~dp0"
 
 echo =====================================================================
-echo           Launching Insignia Backend and Frontend Services
+echo       Launching Insignia Backend and Frontend Services
 echo =====================================================================
 echo.
-echo  [1/2] Starting NestJS Backend API (Port 3001)...
-start "Insignia Backend API (Port 3001)" cmd /k "cd /d "%~dp0insignia-backend" && set PORT=3001 && npm run start:dev"
+
+REM Automatically free port 3001 if occupied by any stale or orphaned process
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3001 ^| findstr LISTENING') do (
+    echo  [!] Freeing port 3001 - terminating PID %%a
+    taskkill /f /pid %%a >nul 2>&1
+)
+
+echo  [1/2] Starting Node.js Backend API (Port 3001)...
+start "Insignia Node.js Backend API (Port 3001)" /D "%~dp0insignia-backend" cmd /k "set PORT=3001 && npm run start:dev"
 
 echo  [2/2] Starting React + Vite Frontend (Port 5173)...
-start "Insignia Frontend Dashboard (Port 5173)" cmd /k "cd /d "%~dp0insignia-frontend" && npm run dev"
+start "Insignia Frontend Dashboard (Port 5173)" /D "%~dp0insignia-frontend" cmd /k "npm run dev"
 
 echo.
 echo =====================================================================
