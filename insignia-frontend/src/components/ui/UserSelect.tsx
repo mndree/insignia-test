@@ -53,8 +53,9 @@ export const UserSelect: React.FC<UserSelectProps> = ({
     }
   }, [isOpen]);
 
-  // Filter users by search term and exclude filter
+  // Filter users by search term, exclude filter, and strictly exclude admin
   const filteredUsers = users
+    .filter((u) => u.username.toLowerCase() !== 'admin')
     .filter((u) => {
       if (!excludeUserId) return true;
       return u.id !== excludeUserId && u.username.toLowerCase() !== excludeUserId.toLowerCase();

@@ -30,14 +30,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   // Modal is restricted exclusively to Admin
   const isAdmin = !authUser || authUser.role === 'ADMIN';
 
-  // Fetch all users for From and To Select2 dropdowns
+  // Fetch all users for From and To Select2 dropdowns (strictly excluding admin)
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['admin_users_all'],
-    queryFn: () => getUsersListApi({ pageSize: 200, includeAdmin: true }),
+    queryFn: () => getUsersListApi({ pageSize: 200 }),
     enabled: isOpen && isAdmin,
   });
 
-  const availableUsers: UserListItemDto[] = usersData?.items || [];
+  const availableUsers: UserListItemDto[] = (usersData?.items || []).filter(
+    (u) => u.username.toLowerCase() !== 'admin'
+  );
 
   const [fromUser, setFromUser] = useState<UserListItemDto | null>(null);
   const [toUser, setToUser] = useState<UserListItemDto | null>(null);
@@ -47,12 +49,11 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Set intelligent defaults once users list loads
+  // Set intelligent defaults once users list loads (only regular users, never admin)
   useEffect(() => {
     if (availableUsers.length > 0) {
       const defaultSender =
         fromUser ||
-        availableUsers.find((u) => u.username === 'admin') ||
         availableUsers.find((u) => u.balance > 0) ||
         availableUsers[0];
 
