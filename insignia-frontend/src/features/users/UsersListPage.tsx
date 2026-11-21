@@ -27,7 +27,7 @@ import {
 
 export const UsersListPage: React.FC = () => {
   const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
-  const onOpenSidebar = outletContext.onOpenSidebar || (() => {});
+  const onOpenSidebar = outletContext.onOpenSidebar || (() => { });
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -213,11 +213,10 @@ export const UsersListPage: React.FC = () => {
         <button
           key={p}
           onClick={() => handlePageChange(Number(p))}
-          className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors focus-ring ${
-            isCurrent
+          className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors focus-ring ${isCurrent
               ? 'bg-brand-600 text-white shadow-xs'
               : 'text-navy-700 hover:bg-slate-100'
-          }`}
+            }`}
         >
           {p}
         </button>
