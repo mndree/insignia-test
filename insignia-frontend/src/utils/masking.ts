@@ -32,11 +32,31 @@ export function formatPhoneNumber(value: string): string {
 }
 
 /**
- * Normalizes display date (e.g. "15 May 1996") into ISO YYYY-MM-DD for native date picker inputs
+ * Normalizes display date (e.g. "15 May 1996", "22/11/2000", "2000-11-22") into ISO YYYY-MM-DD for native date picker inputs
  */
 export function parseDisplayDateToIso(displayDate: string): string {
   if (!displayDate) return '';
-  const parsed = new Date(displayDate);
+  const trimmed = displayDate.trim();
+
+  // Handle dd/mm/yyyy or dd-mm-yyyy
+  const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmyMatch) {
+    const day = dmyMatch[1].padStart(2, '0');
+    const month = dmyMatch[2].padStart(2, '0');
+    const year = dmyMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Handle yyyy-mm-dd
+  const ymdMatch = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = ymdMatch[1];
+    const month = ymdMatch[2].padStart(2, '0');
+    const day = ymdMatch[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  const parsed = new Date(trimmed);
   if (isNaN(parsed.getTime())) return '';
   const y = parsed.getFullYear();
   const m = String(parsed.getMonth() + 1).padStart(2, '0');

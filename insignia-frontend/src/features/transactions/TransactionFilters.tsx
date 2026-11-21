@@ -1,8 +1,9 @@
 import React from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { DatePickerInput } from '@/components/ui/DatePickerInput';
 import { TransactionDirection } from '@/types';
-import { Search, RotateCcw, Filter, Calendar } from 'lucide-react';
+import { Search, RotateCcw, Filter } from 'lucide-react';
 
 interface TransactionFiltersProps {
   searchTerm: string;
@@ -69,23 +70,25 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
 
         {/* Date From */}
         <div>
-          <Input
+          <DatePickerInput
             label="From Date"
-            type="date"
             value={dateFrom}
-            onChange={(e) => onDateFromChange(e.target.value)}
-            leftIcon={<Calendar className="w-4 h-4" />}
+            onChange={onDateFromChange}
+            placeholder="YYYY-MM-DD"
+            outputFormat="iso"
+            leftIcon={true}
           />
         </div>
 
         {/* Date To */}
         <div>
-          <Input
+          <DatePickerInput
             label="To Date"
-            type="date"
             value={dateTo}
-            onChange={(e) => onDateToChange(e.target.value)}
-            leftIcon={<Calendar className="w-4 h-4" />}
+            onChange={onDateToChange}
+            placeholder="YYYY-MM-DD"
+            outputFormat="iso"
+            leftIcon={true}
           />
         </div>
       </div>

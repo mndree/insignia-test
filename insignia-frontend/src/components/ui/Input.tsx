@@ -40,6 +40,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : helperText ? helperId : undefined}
+            onClick={(e) => {
+              if (props.type === 'date') {
+                try {
+                  (e.currentTarget as any).showPicker?.();
+                } catch {}
+              }
+              props.onClick?.(e);
+            }}
             className={cn(
               'w-full bg-white text-navy-900 border border-slate-300 rounded-lg px-3 py-2 text-sm transition-colors placeholder:text-slate-400 focus-ring',
               'hover:border-slate-400',

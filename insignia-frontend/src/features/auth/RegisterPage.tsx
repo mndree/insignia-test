@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
 import { checkUsernameApi } from '@/services/api/endpoints';
-import { formatPhoneNumber, formatDateInput } from '@/utils/masking';
+import { formatPhoneNumber } from '@/utils/masking';
 import { cn } from '@/utils/cn';
 import insigniaLogo from '@/assets/logo.png';
 import {
@@ -12,7 +12,6 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Calendar,
   Mail,
   Phone,
   UserPlus,
@@ -21,6 +20,7 @@ import {
   ArrowLeft,
   CheckCircle2,
 } from 'lucide-react';
+import { DatePickerInput } from '@/components/ui/DatePickerInput';
 
 export const RegisterPage: React.FC = () => {
   const { registerWallet } = useAuth();
@@ -470,21 +470,17 @@ export const RegisterPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Date of Birth */}
+                {/* Date of Birth DatePicker */}
                 <div>
-                  <label className="block text-[11px] font-bold text-navy-900 uppercase tracking-wide mb-1.5">
-                    DATE OF BIRTH (optional)
-                  </label>
-                  <div className="relative flex items-center rounded-xl border border-indigo-100/90 bg-[#f4f7fe]/80 focus-within:bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
-                    <Calendar className="w-4 h-4 text-slate-400 ml-3.5 shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="dd/mm/yyyy"
-                      value={dateOfBirth}
-                      onChange={(e) => setDateOfBirth(formatDateInput(e.target.value))}
-                      className="w-full bg-transparent px-3 py-2.5 text-sm text-navy-900 placeholder:text-slate-400 focus:outline-none font-mono text-xs sm:text-sm"
-                    />
-                  </div>
+                  <DatePickerInput
+                    label="DATE OF BIRTH (OPTIONAL)"
+                    value={dateOfBirth}
+                    onChange={setDateOfBirth}
+                    placeholder="Select date of birth"
+                    variant="register"
+                    leftIcon={true}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
                 </div>
 
                 <p className="text-xs text-slate-400 font-medium pt-1">
