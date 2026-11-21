@@ -12,6 +12,7 @@ interface BalanceCardProps {
   onOpenTopup: () => void;
   onOpenTransfer: () => void;
   canTopup?: boolean;
+  canTransfer?: boolean;
 }
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
@@ -22,6 +23,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   onOpenTopup,
   onOpenTransfer,
   canTopup = true,
+  canTransfer = true,
 }) => {
   return (
     <Card className="relative overflow-hidden bg-gradient-to-br from-white via-white to-slate-50 border border-slate-200/90 shadow-sm">
@@ -80,15 +82,17 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             </Button>
           )}
 
-          <Button
-            variant="primary"
-            size="md"
-            onClick={onOpenTransfer}
-            className="flex-1 md:flex-initial"
-          >
-            <Send className="w-4 h-4 mr-1.5" />
-            Transfer
-          </Button>
+          {canTransfer && (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={onOpenTransfer}
+              className="flex-1 md:flex-initial"
+            >
+              <Send className="w-4 h-4 mr-1.5" />
+              Transfer
+            </Button>
+          )}
         </div>
       </div>
     </Card>

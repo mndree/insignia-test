@@ -172,6 +172,7 @@ export interface UsersQueryFilters {
   status?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  includeAdmin?: boolean;
 }
 
 export interface UsersListResponseDto {

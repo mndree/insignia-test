@@ -209,9 +209,12 @@ export class AdminService {
     const pageSize = Math.max(1, Number(query.pageSize) || 10);
     const skip = (page - 1) * pageSize;
 
-    const where: Prisma.UserWhereInput = {
-      username: { not: 'admin' },
-    };
+    const includeAdmin = String(query.includeAdmin) === 'true';
+    const where: Prisma.UserWhereInput = includeAdmin
+      ? {}
+      : {
+          username: { not: 'admin' },
+        };
 
     if (query.search && String(query.search).trim()) {
       const term = String(query.search).trim();

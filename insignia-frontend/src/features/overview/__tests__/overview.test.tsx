@@ -87,14 +87,18 @@ describe('Overview & Wallet Transactions', () => {
       />
     );
 
-    const recipientInput = screen.getByLabelText(/recipient username/i);
+    // Verify both From and To dropdown labels exist
+    await waitFor(() => {
+      expect(screen.getByText(/from \(sender account\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/to \(recipient account\)/i)).toBeInTheDocument();
+    });
+
     const amountInput = screen.getByLabelText(/transfer amount/i);
     const reviewBtn = screen.getByRole('button', { name: /review transfer/i });
 
-    // Exceed balance (600 > 500)
-    await user.type(recipientInput, 'azra');
+    // Exceed balance (999,999,999 > available)
     await user.clear(amountInput);
-    await user.type(amountInput, '600');
+    await user.type(amountInput, '999999999');
     await user.click(reviewBtn);
 
     await waitFor(() => {
