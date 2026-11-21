@@ -7,7 +7,7 @@ import { BalanceCard } from './BalanceCard';
 import { TopupModal } from './TopupModal';
 import { TransferModal } from './TransferModal';
 import { OverviewCharts } from './OverviewCharts';
-import { getBalanceApi, getTransactionsApi } from '@/services/api/endpoints';
+import { getBalanceApi, getTransactionsApi, getUsersListApi } from '@/services/api/endpoints';
 import { APP_CONFIG } from '@/app/config';
 import { Alert } from '@/components/ui/Alert';
 import { normalizeApiError } from '@/services/api/client';
@@ -16,6 +16,7 @@ export const OverviewPage: React.FC = () => {
   const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
   const onOpenSidebar = outletContext.onOpenSidebar || (() => { });
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   const [isTopupOpen, setIsTopupOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -28,11 +29,23 @@ export const OverviewPage: React.FC = () => {
     error: balanceError,
     refetch: refetchBalance,
   } = useQuery({
-    queryKey: ['balance'],
+    queryKey: ['balance', { role: user?.role }],
     queryFn: getBalanceApi,
   });
 
-  // 2. Fetch recent transactions for charts (if available)
+  // 2. Fetch admin users aggregate stats when viewed by admin
+  const {
+    data: usersListData,
+    isLoading: isUsersLoading,
+    isFetching: isUsersFetching,
+    refetch: refetchUsers,
+  } = useQuery({
+    queryKey: ['admin_users_stats'],
+    queryFn: () => getUsersListApi({ page: 1, pageSize: 1 }),
+    enabled: isAdmin,
+  });
+
+  // 3. Fetch recent transactions for charts (if available)
   const isHistoryAvailable = APP_CONFIG.isDemoMode || APP_CONFIG.isTransactionsEndpointConfigured;
 
   const {
@@ -45,7 +58,9 @@ export const OverviewPage: React.FC = () => {
     enabled: isHistoryAvailable,
   });
 
-  const balance = balanceData?.balance ?? 0;
+  const balance = isAdmin
+    ? (usersListData?.stats?.totalWalletBalance ?? balanceData?.balance ?? 0)
+    : (balanceData?.balance ?? 0);
 
   return (
     <div className="space-y-6">
@@ -63,13 +78,22 @@ export const OverviewPage: React.FC = () => {
 
       {/* Balance Card */}
       <BalanceCard
+        title={isAdmin ? 'Total Wallet Balance' : 'Wallet Balance'}
+        subtitle={
+          isAdmin
+            ? 'Total accumulated wallet balance across all registered user accounts.'
+            : 'Live wallet balance available for transfers and payments.'
+        }
         balance={balance}
-        isLoading={isBalanceLoading}
-        isFetching={isBalanceFetching}
-        onRefresh={() => refetchBalance()}
+        isLoading={isBalanceLoading || (isAdmin && isUsersLoading)}
+        isFetching={isBalanceFetching || (isAdmin && isUsersFetching)}
+        onRefresh={() => {
+          refetchBalance();
+          if (isAdmin) refetchUsers();
+        }}
         onOpenTopup={() => setIsTopupOpen(true)}
         onOpenTransfer={() => setIsTransferOpen(true)}
-        canTopup={user?.role === 'ADMIN'}
+        canTopup={!isAdmin}
         canTransfer={true}
       />
 

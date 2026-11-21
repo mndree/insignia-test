@@ -128,7 +128,19 @@ export class WalletService {
     });
   }
 
-  async getBalance(userId: string): Promise<{ balance: number }> {
+  async getBalance(userId: string, isAdmin?: boolean): Promise<{ balance: number }> {
+    if (isAdmin) {
+      const balanceAggregate = await prisma.user.aggregate({
+        where: { username: { not: 'admin' } },
+        _sum: {
+          balance: true,
+        },
+      });
+      return {
+        balance: Number(balanceAggregate._sum.balance || 0),
+      };
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });

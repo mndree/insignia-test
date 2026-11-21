@@ -5,6 +5,8 @@ import { formatNumber } from '@/utils/formatters';
 import { Wallet, RefreshCw, Plus, Send } from 'lucide-react';
 
 interface BalanceCardProps {
+  title?: string;
+  subtitle?: string;
   balance: number;
   isLoading: boolean;
   isFetching: boolean;
@@ -16,6 +18,8 @@ interface BalanceCardProps {
 }
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
+  title = 'Wallet Balance',
+  subtitle,
   balance,
   isLoading,
   isFetching,
@@ -34,12 +38,12 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
               <Wallet className="w-5 h-5" />
             </span>
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Wallet Balance
+              {title}
             </span>
             <button
               onClick={onRefresh}
               disabled={isFetching}
-              title="Refresh wallet balance"
+              title={`Refresh ${title.toLowerCase()}`}
               className="p-1 text-slate-400 hover:text-navy-900 rounded-md hover:bg-slate-100 transition-colors focus-ring"
               aria-label="Refresh balance"
             >
@@ -65,7 +69,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
           </div>
 
           <p className="text-xs text-slate-400">
-            Backend API: Single numeric wallet balance. No currency specified in Stoplight spec.
+            {subtitle || 'Live wallet balance available for transfers and payments.'}
           </p>
         </div>
 

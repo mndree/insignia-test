@@ -83,7 +83,7 @@ walletRouter.post('/topup', authMiddleware, async (req: AuthenticatedRequest, re
 // Get balance
 walletRouter.get('/balance', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const result = await walletService.getBalance(req.user.id);
+    const result = await walletService.getBalance(req.user.id, req.isAdmin);
     return res.status(200).json(result);
   } catch (err) {
     next(err);
