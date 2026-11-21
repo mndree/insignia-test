@@ -14,6 +14,34 @@ walletRouter.post(['/user', '/register'], async (req, res, next) => {
   }
 });
 
+// User profile endpoints (Must be declared before dynamic parameter routes)
+walletRouter.get(['/user/profile', '/profile/me'], authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const result = await walletService.getUserProfile(req.user.id);
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+walletRouter.patch(['/user/profile', '/profile/me'], authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const result = await walletService.updateUserProfile(req.user.id, req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+walletRouter.patch(['/user/change-password', '/profile/change-password'], authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const result = await walletService.changeUserPassword(req.user.id, req.body);
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Check username availability
 walletRouter.get(['/user/check-username/:username', '/check-username/:username'], async (req, res, next) => {
   try {

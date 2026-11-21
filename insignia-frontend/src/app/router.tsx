@@ -10,6 +10,7 @@ import { UserDetailsPage } from '@/features/users/UserDetailsPage';
 import { TransactionsPage } from '@/features/transactions/TransactionsPage';
 import { TopTransactionsPage } from '@/features/top-transactions/TopTransactionsPage';
 import { TopUsersPage } from '@/features/top-users/TopUsersPage';
+import { MyProfilePage } from '@/features/profile/MyProfilePage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -28,11 +29,42 @@ export const AppRouter: React.FC = () => {
         }
       >
         <Route index element={<OverviewPage />} />
-        <Route path="users" element={<UsersListPage />} />
-        <Route path="users/:id" element={<UserDetailsPage />} />
+        <Route path="profile" element={<MyProfilePage />} />
         <Route path="transactions" element={<TransactionsPage />} />
-        <Route path="top-transactions" element={<TopTransactionsPage />} />
-        <Route path="top-users" element={<TopUsersPage />} />
+
+        {/* Admin Only Routes */}
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <UsersListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="users/:id"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <UserDetailsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="top-transactions"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <TopTransactionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="top-users"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <TopUsersPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       {/* Fallback */}

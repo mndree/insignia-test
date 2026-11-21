@@ -15,6 +15,7 @@ import {
   UsersQueryFilters,
   UsersListResponseDto,
   UserDetailsResponseDto,
+  UserProfileDto,
   UpdateUserProfileDto,
   AdminTransferRequestDto,
 } from '@/types';
@@ -224,5 +225,40 @@ export async function updateAdminProfileApi(
     `/admin/profile/${encodeURIComponent(username)}`,
     dto
   );
+  return response.data;
+}
+
+/**
+ * Get profile for authenticated user
+ * GET /user/profile
+ */
+export async function getUserProfileApi(): Promise<UserProfileDto> {
+  const response = await apiClient.get<UserProfileDto>('/user/profile');
+  return response.data;
+}
+
+/**
+ * Update profile for authenticated user
+ * PATCH /user/profile
+ */
+export async function updateMyProfileApi(
+  dto: UpdateUserProfileDto
+): Promise<{ message: string; user: UserProfileDto }> {
+  const response = await apiClient.patch<{ message: string; user: UserProfileDto }>(
+    '/user/profile',
+    dto
+  );
+  return response.data;
+}
+
+/**
+ * Change password for authenticated user
+ * PATCH /user/change-password
+ */
+export async function changeUserPasswordApi(dto: {
+  currentPassword?: string;
+  newPassword: string;
+}): Promise<{ message: string }> {
+  const response = await apiClient.patch<{ message: string }>('/user/change-password', dto);
   return response.data;
 }

@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Alert } from '@/components/ui/Alert';
 import { DemoBadge } from '@/components/ui/DemoBadge';
 import { APP_CONFIG } from '@/app/config';
-import { Eye, EyeOff, Lock, User, KeyRound, Info, ExternalLink } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, KeyRound, ExternalLink } from 'lucide-react';
 import { normalizeApiError } from '@/services/api/client';
 import insigniaLogo from '@/assets/logo.png';
 
@@ -59,9 +59,14 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleFillDemo = () => {
-    setValue('username', 'admin', { shouldValidate: true });
-    setValue('password', 'admin123', { shouldValidate: true });
+  const handleFillDemo = (type: 'admin' | 'user' = 'admin') => {
+    if (type === 'admin') {
+      setValue('username', 'admin', { shouldValidate: true });
+      setValue('password', 'admin123', { shouldValidate: true });
+    } else {
+      setValue('username', 'alice', { shouldValidate: true });
+      setValue('password', 'password123', { shouldValidate: true });
+    }
     setErrorMessage(null);
   };
 
@@ -81,7 +86,7 @@ export const LoginPage: React.FC = () => {
           Insignia Wallet
         </h2>
         <p className="mt-1 text-center text-sm text-slate-500">
-          Admin Portal & Cryptocurrency Dashboard
+          Cryptocurrency Wallet & Financial Portal
         </p>
         <div className="mt-3 flex justify-center">
           <DemoBadge />
@@ -93,7 +98,7 @@ export const LoginPage: React.FC = () => {
           <CardHeader className="text-center pb-2">
             <CardTitle>Sign In</CardTitle>
             <CardDescription>
-              Enter your credentials to access the admin console
+              Sign in with your Admin or User account to access your wallet
             </CardDescription>
           </CardHeader>
 
@@ -117,24 +122,32 @@ export const LoginPage: React.FC = () => {
               </Alert>
             )}
 
-            {APP_CONFIG.isDemoMode && (
-              <div className="mb-5 p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 flex items-start gap-3">
-                <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-                <div className="text-xs text-navy-800 flex-1">
-                  <p className="font-semibold text-brand-700 mb-0.5">Demo Mode Active</p>
-                  <p className="text-slate-600">
-                    Preloaded credentials: <span className="font-mono font-bold">admin</span> / <span className="font-mono font-bold">admin123</span>
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleFillDemo}
-                    className="mt-2 text-xs font-semibold text-brand-600 hover:text-brand-700 underline focus-ring rounded"
-                  >
-                    Auto-fill demo credentials
-                  </button>
-                </div>
+            <div className="mb-5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
+                <span>Quick Sign-In Presets:</span>
+                <span className="text-[10px] text-slate-400">Click to fill</span>
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleFillDemo('admin')}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 text-navy-800 transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <span>🛡️</span>
+                  <span>Admin</span>
+                  <span className="text-[10px] text-slate-400 font-normal">(admin)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFillDemo('user')}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 text-navy-800 transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <span>👤</span>
+                  <span>User</span>
+                  <span className="text-[10px] text-slate-400 font-normal">(alice)</span>
+                </button>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <Input

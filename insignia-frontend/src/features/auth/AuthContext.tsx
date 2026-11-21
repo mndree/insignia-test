@@ -70,9 +70,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     try {
       const response = await loginApi(credentials);
+      const role = response.role || response.user?.role || (response.admin ? 'ADMIN' : 'USER');
       const authUser: AuthUser = {
         username: response.user?.username || credentials.username,
         token: response.token,
+        role,
+        id: response.user?.id || response.admin?.id,
+        fullName: response.user?.fullName || response.admin?.fullName,
       };
 
       setUser(authUser);
@@ -95,6 +99,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const authUser: AuthUser = {
         username: data.username,
         token: response.token,
+        role: 'USER',
+        fullName: data.fullName,
       };
 
       setUser(authUser);

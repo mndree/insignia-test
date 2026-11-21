@@ -32,12 +32,18 @@ interface SidebarContentProps {
   onOpenChangeBiodata: () => void;
 }
 
-const navItems = [
+const adminNavItems = [
   { name: 'Overview', to: '/', icon: LayoutDashboard },
   { name: 'Users', to: '/users', icon: Users },
   { name: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
   { name: 'Top Transactions', to: '/top-transactions', icon: TrendingUp },
   { name: 'Top Users', to: '/top-users', icon: Trophy },
+];
+
+const userNavItems = [
+  { name: 'Overview', to: '/', icon: LayoutDashboard },
+  { name: 'My Profile', to: '/profile', icon: UserPen },
+  { name: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
 ];
 
 const SidebarContent: React.FC<SidebarContentProps> = ({
@@ -49,9 +55,13 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const footerRef = useRef<HTMLDivElement>(null);
 
+  const isUser = user?.role === 'USER';
+  const navItems = isUser ? userNavItems : adminNavItems;
+
   const { data: adminProfile } = useQuery({
     queryKey: ['admin_profile', user?.username || 'admin'],
     queryFn: () => getAdminProfileApi(user?.username || 'admin'),
+    enabled: !isUser,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -83,7 +93,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
               Insignia Wallet
             </h1>
             <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-              Admin Dashboard
+              {isUser ? 'Wallet Portal' : 'Admin Dashboard'}
             </p>
           </div>
         </div>
@@ -201,7 +211,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                 )}
               </div>
               <span className="block text-[11px] text-slate-400 font-medium truncate mt-0.5">
-                Active Session
+                {isUser ? 'Wallet User' : 'Administrator'}
               </span>
             </div>
           </button>

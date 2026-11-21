@@ -9,6 +9,9 @@ export type DataMode = 'demo' | 'live';
 export interface AuthUser {
   username: string;
   token: string;
+  role?: 'ADMIN' | 'USER';
+  id?: string;
+  fullName?: string;
 }
 
 // ==========================================
@@ -71,9 +74,42 @@ export interface LoginDto {
 
 export interface LoginResponseDto {
   token: string;
+  role?: 'ADMIN' | 'USER';
   user?: {
+    id?: string;
     username: string;
+    fullName?: string;
+    role?: 'ADMIN' | 'USER';
   };
+  admin?: {
+    id: string;
+    username: string;
+    fullName?: string;
+  } | null;
+}
+
+export interface UserProfileDto {
+  id: string;
+  userCode: string;
+  username: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  dateOfBirth?: string;
+  address?: string;
+  balance: number;
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
+}
+
+export interface UpdateUserProfileDto {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  address?: string;
 }
 
 export type TransactionDirection = 'all' | 'incoming' | 'outgoing';

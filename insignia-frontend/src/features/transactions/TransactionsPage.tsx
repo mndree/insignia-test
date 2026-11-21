@@ -7,12 +7,13 @@ import { TransactionTable } from './TransactionTable';
 import { Pagination } from '@/components/ui/Pagination';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { getTransactionsApi } from '@/services/api/endpoints';
+import { getTransactionsApi, getBalanceApi } from '@/services/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { TransactionDirection } from '@/types';
 import { APP_CONFIG } from '@/app/config';
 import { normalizeApiError } from '@/services/api/client';
-import { RefreshCw, FileText, AlertTriangle } from 'lucide-react';
+import { RefreshCw, FileText, AlertTriangle, Send } from 'lucide-react';
+import { TransferModal } from '@/features/overview/TransferModal';
 
 export const TransactionsPage: React.FC = () => {
   const outletContext = useOutletContext<{ onOpenSidebar?: () => void }>() || {};
@@ -31,7 +32,15 @@ export const TransactionsPage: React.FC = () => {
 
   // Local state for debounced search input
   const [searchInput, setSearchInput] = useState(searchParam);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 350);
+
+  // Fetch current balance for transfer modal
+  const { data: balanceData } = useQuery({
+    queryKey: ['wallet_balance'],
+    queryFn: getBalanceApi,
+    staleTime: 1000 * 30,
+  });
 
   // Sync debounced search to URL query param and reset page to 1
   useEffect(() => {
@@ -162,17 +171,28 @@ export const TransactionsPage: React.FC = () => {
         title="Transactions History"
         description="Comprehensive paginated transaction ledger with search and filters"
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching || !isConfigured}
-            aria-label="Refresh transactions"
-            className="bg-white hover:bg-slate-50 border-slate-200/90 text-navy-800 font-semibold"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin text-brand-600' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsTransferModalOpen(true)}
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-xs flex items-center gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Transfer Balance</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching || !isConfigured}
+              aria-label="Refresh transactions"
+              className="bg-white hover:bg-slate-50 border-slate-200/90 text-navy-800 font-semibold"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? 'animate-spin text-brand-600' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         }
       />
 
@@ -259,6 +279,13 @@ export const TransactionsPage: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Transfer Balance Modal */}
+      <TransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        currentBalance={balanceData?.balance ?? 0}
+      />
     </div>
   );
 };

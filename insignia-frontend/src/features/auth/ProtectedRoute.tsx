@@ -2,8 +2,11 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './useAuth';
 
-export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+export const ProtectedRoute: React.FC<{
+  children: React.ReactNode;
+  requiredRole?: 'ADMIN' | 'USER';
+}> = ({ children, requiredRole }) => {
+  const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -19,6 +22,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requiredRole && user?.role && user.role !== requiredRole) {
+    // If user has insufficient permissions, redirect to Overview
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

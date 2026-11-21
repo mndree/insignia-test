@@ -397,6 +397,98 @@ export class WalletService {
       total,
     };
   }
+
+  async getUserProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    return {
+      id: user.id,
+      userCode: user.userCode || `USR-${user.id.slice(0, 4)}`,
+      username: user.username,
+      fullName: user.fullName || user.username,
+      email: user.email || `${user.username}@example.com`,
+      phone: user.phone || '',
+      dateOfBirth: user.dateOfBirth || '',
+      address: user.address || '',
+      balance: Number(user.balance),
+      status: user.status,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+      lastLoginAt: user.lastLoginAt.toISOString(),
+    };
+  }
+
+  async updateUserProfile(userId: string, dto: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    dateOfBirth?: string;
+    address?: string;
+  }) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: dto.fullName !== undefined ? dto.fullName : user.fullName,
+        email: dto.email !== undefined ? dto.email : user.email,
+        phone: dto.phone !== undefined ? dto.phone : user.phone,
+        dateOfBirth: dto.dateOfBirth !== undefined ? dto.dateOfBirth : user.dateOfBirth,
+        address: dto.address !== undefined ? dto.address : user.address,
+      },
+    });
+
+    return {
+      message: 'Profile updated successfully',
+      user: {
+        id: updated.id,
+        userCode: updated.userCode,
+        username: updated.username,
+        fullName: updated.fullName,
+        email: updated.email,
+        phone: updated.phone,
+        dateOfBirth: updated.dateOfBirth,
+        address: updated.address,
+        balance: Number(updated.balance),
+        status: updated.status,
+      },
+    };
+  }
+
+  async changeUserPassword(userId: string, dto: { currentPassword?: string; newPassword?: string }) {
+    if (!dto.newPassword || dto.newPassword.length < 6) {
+      throw new BadRequestException('New password must be at least 6 characters');
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.password && dto.currentPassword) {
+      const match = await bcrypt.compare(dto.currentPassword, user.password);
+      if (!match) {
+        throw new BadRequestException('Current password does not match');
+      }
+    }
+
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    return { message: 'Password changed successfully' };
+  }
 }
 
 export const walletService = new WalletService();
