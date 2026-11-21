@@ -232,6 +232,19 @@ export interface AdminTransferRequestDto {
   notes?: string;
 }
 
+export interface AdminTopupRequestDto {
+  amount: number;
+  notes?: string;
+}
+
+export interface AdminTopupResponseDto {
+  success: boolean;
+  topupCode: string;
+  amount: number;
+  userBalanceAfter: number;
+  createdBy?: string;
+}
+
 // ==========================================
 // 4. UI Models & Analytics Summaries
 // ==========================================

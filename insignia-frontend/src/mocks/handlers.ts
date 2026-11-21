@@ -12,6 +12,7 @@ import {
   TransactionRecordDto,
   UpdateUserProfileDto,
   AdminTransferRequestDto,
+  AdminTopupRequestDto,
 } from '@/types';
 
 // Stateful in-memory stores for Demo mode simulation
@@ -179,6 +180,13 @@ export const handlers = [
     const user = getAuthenticatedUser(request);
     if (!user) {
       return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (user.username.toLowerCase() !== 'admin') {
+      return HttpResponse.json(
+        { message: 'Top up feature is restricted to administrators only' },
+        { status: 403 }
+      );
     }
 
     try {
@@ -699,6 +707,61 @@ export const handlers = [
       );
     } catch {
       return HttpResponse.json({ message: 'Invalid transfer payload' }, { status: 400 });
+    }
+  }),
+
+  // ----------------------------------------------------
+  // Admin Top Up User Balance
+  // POST /admin/users/:idOrUsername/topup
+  // ----------------------------------------------------
+  http.post('*/admin/users/:idOrUsername/topup', async ({ params, request }) => {
+    const param = String(params.idOrUsername).toLowerCase();
+    const user = usersStore.find(
+      (u) =>
+        u.id.toLowerCase() === param ||
+        u.username.toLowerCase() === param ||
+        u.userCode.toLowerCase() === param
+    );
+
+    if (!user) {
+      return HttpResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
+    try {
+      const body = (await request.json()) as AdminTopupRequestDto;
+      const amount = Number(body.amount);
+
+      if (isNaN(amount) || amount <= 0) {
+        return HttpResponse.json({ message: 'Top up amount must be greater than 0' }, { status: 400 });
+      }
+
+      user.balance += amount;
+
+      const code = `TOP-${1001 + usersStore.length}`;
+      const now = new Date().toISOString();
+
+      transactionsStore.unshift({
+        id: code,
+        owner: user.username,
+        username: 'admin',
+        amount,
+        created_at: now,
+        description: body.notes || 'Admin top up credit',
+        notes: body.notes,
+      });
+
+      return HttpResponse.json(
+        {
+          success: true,
+          topupCode: code,
+          amount,
+          userBalanceAfter: user.balance,
+          createdBy: 'admin',
+        },
+        { status: 200 }
+      );
+    } catch {
+      return HttpResponse.json({ message: 'Invalid JSON request body' }, { status: 400 });
     }
   }),
 

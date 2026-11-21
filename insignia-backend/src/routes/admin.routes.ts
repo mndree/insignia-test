@@ -67,6 +67,21 @@ adminRouter.post('/users/:id/transfer', authMiddleware, async (req: Authenticate
   }
 });
 
+// Admin top up user balance
+adminRouter.post('/users/:id/topup', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    if (!req.isAdmin) {
+      return res.status(403).json({ message: 'Forbidden: Admin access required' });
+    }
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const adminUsername = req.admin?.username || 'admin';
+    const result = await adminService.topupUserBalance(id, req.body, adminUsername);
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Change admin password
 adminRouter.patch('/change-password', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
   try {

@@ -21,12 +21,15 @@ import {
   Clock,
   RefreshCw,
   ArrowLeftRight,
+  PlusCircle,
 } from 'lucide-react';
+import { AdminTopupModal } from './AdminTopupModal';
 
 export const UserDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   useOutletContext<{ onOpenSidebar: () => void }>();
 
+  const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [sortField, setSortField] = useState<string | null>(null);
@@ -269,16 +272,27 @@ export const UserDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Transfer Action Button */}
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={() => setIsTransferModalOpen(true)}
-            className="w-full font-bold shadow-xs py-3"
-          >
-            <ArrowLeftRight className="w-4 h-4 mr-2" />
-            Transfer Balance
-          </Button>
+          {/* Action Buttons: Top Up Balance & Transfer Balance */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => setIsTopupModalOpen(true)}
+              className="w-full font-bold shadow-xs py-3"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Top Up Balance
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setIsTransferModalOpen(true)}
+              className="w-full font-bold shadow-xs py-3"
+            >
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              Transfer Balance
+            </Button>
+          </div>
 
           {/* Bottom Sub-cards: Total Received & Total Sent */}
           <div className="grid grid-cols-2 gap-3 pt-2">
@@ -447,6 +461,12 @@ export const UserDetailsPage: React.FC = () => {
       </div>
 
       {/* Modals */}
+      <AdminTopupModal
+        isOpen={isTopupModalOpen}
+        onClose={() => setIsTopupModalOpen(false)}
+        user={user}
+      />
+
       <TransferBalanceModal
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}

@@ -62,10 +62,18 @@ walletRouter.post('/user/check-username', async (req, res, next) => {
   }
 });
 
-// Top up balance
+// Top up balance (Admin only)
 walletRouter.post('/topup', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    await walletService.topup(req.user, req.body);
+    if (!req.isAdmin) {
+      return res.status(403).json({
+        message: 'Top up feature is restricted to administrators only',
+        error: 'Forbidden',
+        statusCode: 403,
+      });
+    }
+    const adminUsername = req.admin?.username || req.user?.username || 'admin';
+    await walletService.topup(req.user, req.body, adminUsername);
     return res.status(204).send();
   } catch (err) {
     next(err);

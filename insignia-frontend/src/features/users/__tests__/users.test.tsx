@@ -92,4 +92,32 @@ describe('Users List & User Details Pages', () => {
     expect(screen.getByText('Transfer amount')).toBeInTheDocument();
     expect(screen.getByText('Balance after transfer')).toBeInTheDocument();
   });
+
+  it('opens admin top up modal from UserDetailsPage and computes balance addition', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/users/:id" element={<UserDetailsPage />} />
+      </Routes>,
+      { initialEntries: ['/users/andre'] }
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /top up balance/i })).toBeInTheDocument();
+    });
+
+    const topupBtn = screen.getByRole('button', { name: /top up balance/i });
+    await user.click(topupBtn);
+
+    // Modal should be open
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/credit wallet units directly to @andre's account/i)).toBeInTheDocument();
+    });
+
+    // Check calculation summary box
+    expect(screen.getByText('Top up addition:')).toBeInTheDocument();
+    expect(screen.getByText('Balance after top up:')).toBeInTheDocument();
+  });
 });

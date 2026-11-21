@@ -521,6 +521,54 @@ export class AdminService {
     };
   }
 
+  async topupUserBalance(
+    userId: string,
+    dto: { amount?: number | string; notes?: string },
+    adminUsername: string = 'admin'
+  ) {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ id: userId }, { username: userId }, { userCode: userId }],
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User '${userId}' not found`);
+    }
+
+    const amount = Number(dto.amount);
+    if (isNaN(amount) || amount <= 0) {
+      throw new BadRequestException('Top up amount must be greater than 0');
+    }
+
+    const topupCount = await prisma.topup.count();
+    const topupCode = `TOP-${1001 + topupCount}`;
+
+    const [topup, updatedUser] = await prisma.$transaction([
+      prisma.topup.create({
+        data: {
+          topupCode,
+          userId: user.id,
+          amount,
+          notes: dto.notes?.trim() || null,
+          createdBy: adminUsername,
+        },
+      }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: { balance: { increment: amount } },
+      }),
+    ]);
+
+    return {
+      success: true,
+      topupCode: topup.topupCode,
+      amount,
+      userBalanceAfter: Number(updatedUser.balance),
+      createdBy: topup.createdBy,
+    };
+  }
+
   async changeAdminPassword(username: string, newPassword: string, currentPassword?: string) {
     if (!username || !newPassword) {
       throw new BadRequestException('Username and new password are required');

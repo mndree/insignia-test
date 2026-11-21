@@ -55,6 +55,7 @@ model Topup {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount    Decimal  @db.Decimal(18, 2)
   notes     String?
+  createdBy String?  @default("admin")
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([userId])

@@ -18,6 +18,8 @@ import {
   UserProfileDto,
   UpdateUserProfileDto,
   AdminTransferRequestDto,
+  AdminTopupRequestDto,
+  AdminTopupResponseDto,
 } from '@/types';
 
 // ==========================================
@@ -182,6 +184,21 @@ export async function adminTransferBalanceApi(
 ): Promise<{ success: boolean; transferCode: string; amount: number; senderBalanceAfter: number }> {
   const response = await apiClient.post(
     `/admin/users/${encodeURIComponent(fromUserIdOrUsername)}/transfer`,
+    dto
+  );
+  return response.data;
+}
+
+/**
+ * Admin top up user balance
+ * POST /admin/users/:idOrUsername/topup
+ */
+export async function adminTopupBalanceApi(
+  userIdOrUsername: string,
+  dto: AdminTopupRequestDto
+): Promise<AdminTopupResponseDto> {
+  const response = await apiClient.post<AdminTopupResponseDto>(
+    `/admin/users/${encodeURIComponent(userIdOrUsername)}/topup`,
     dto
   );
   return response.data;

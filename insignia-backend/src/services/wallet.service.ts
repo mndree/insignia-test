@@ -96,13 +96,15 @@ export class WalletService {
     return { token };
   }
 
-  async topup(user: User, dto: { amount?: number | string }): Promise<void> {
+  async topup(user: User, dto: { amount?: number | string; notes?: string }, createdBy: string = 'admin'): Promise<void> {
     const numAmount = Number(dto.amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new BadRequestException('Topup amount must be greater than 0');
     }
 
     const decimalAmount = new Prisma.Decimal(numAmount);
+    const topupCount = await prisma.topup.count();
+    const topupCode = `TOP-${1001 + topupCount}`;
 
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
@@ -116,8 +118,11 @@ export class WalletService {
 
       await tx.topup.create({
         data: {
+          topupCode,
           userId: user.id,
           amount: decimalAmount,
+          notes: dto.notes?.trim() || null,
+          createdBy,
         },
       });
     });

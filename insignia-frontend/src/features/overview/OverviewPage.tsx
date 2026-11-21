@@ -69,6 +69,7 @@ export const OverviewPage: React.FC = () => {
         onRefresh={() => refetchBalance()}
         onOpenTopup={() => setIsTopupOpen(true)}
         onOpenTransfer={() => setIsTransferOpen(true)}
+        canTopup={user?.role === 'ADMIN'}
       />
 
       {/* Visual Analytics / Charts */}

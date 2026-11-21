@@ -11,6 +11,7 @@ interface BalanceCardProps {
   onRefresh: () => void;
   onOpenTopup: () => void;
   onOpenTransfer: () => void;
+  canTopup?: boolean;
 }
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
@@ -20,6 +21,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   onRefresh,
   onOpenTopup,
   onOpenTransfer,
+  canTopup = true,
 }) => {
   return (
     <Card className="relative overflow-hidden bg-gradient-to-br from-white via-white to-slate-50 border border-slate-200/90 shadow-sm">
@@ -66,15 +68,17 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="md"
-            onClick={onOpenTopup}
-            className="flex-1 md:flex-initial"
-          >
-            <Plus className="w-4 h-4 mr-1.5 text-brand-600" />
-            Top Up
-          </Button>
+          {canTopup && (
+            <Button
+              variant="outline"
+              size="md"
+              onClick={onOpenTopup}
+              className="flex-1 md:flex-initial"
+            >
+              <Plus className="w-4 h-4 mr-1.5 text-brand-600" />
+              Top Up
+            </Button>
+          )}
 
           <Button
             variant="primary"
