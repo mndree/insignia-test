@@ -209,8 +209,8 @@ export const TransferBalanceModal: React.FC<TransferBalanceModalProps> = ({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Amount to send:</span>
-                  <span className="font-bold text-outgoing font-mono text-sm">
-                    -{formatWalletUnits(numericAmount)}
+                  <span className="font-bold text-emerald-600 font-mono text-sm">
+                    {formatWalletUnits(numericAmount)}
                   </span>
                 </div>
                 {notes && (
@@ -219,12 +219,6 @@ export const TransferBalanceModal: React.FC<TransferBalanceModalProps> = ({
                     <span className="font-medium text-navy-800">{notes}</span>
                   </div>
                 )}
-                <div className="border-t border-indigo-200/80 pt-2 flex justify-between items-center font-bold">
-                  <span className="text-slate-600">Sender Balance After:</span>
-                  <span className="text-navy-900 font-mono">
-                    {formatWalletUnits(balanceAfter)}
-                  </span>
-                </div>
               </div>
 
               <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-800">

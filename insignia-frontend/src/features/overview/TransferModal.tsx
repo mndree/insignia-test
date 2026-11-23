@@ -62,20 +62,20 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       if (!currentSender) {
         currentSender = isUser && authUser
           ? {
-              id: (authUser as any).id || (authUser as any).sub || authUser.username,
-              userCode: (authUser as any).userCode || 'USR-0001',
-              username: authUser.username,
-              fullName: authUser.fullName || authUser.username,
-              email: (authUser as any).email || `${authUser.username}@example.com`,
-              phone: '',
-              dateOfBirth: '',
-              address: '',
-              avatarUrl: (authUser as any).avatarUrl || null,
-              status: 'Active',
-              balance: initialCurrentBalance ?? 0,
-              createdAt: '',
-              lastLoginAt: '',
-            }
+            id: (authUser as any).id || (authUser as any).sub || authUser.username,
+            userCode: (authUser as any).userCode || 'USR-0001',
+            username: authUser.username,
+            fullName: authUser.fullName || authUser.username,
+            email: (authUser as any).email || `${authUser.username}@example.com`,
+            phone: '',
+            dateOfBirth: '',
+            address: '',
+            avatarUrl: (authUser as any).avatarUrl || null,
+            status: 'Active',
+            balance: initialCurrentBalance ?? 0,
+            createdAt: '',
+            lastLoginAt: '',
+          }
           : availableUsers.find((u) => u.balance > 0) || availableUsers[0];
         setFromUser(currentSender);
       }
@@ -96,8 +96,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   // Keep sender balance updated
   const senderBalance = fromUser ? fromUser.balance : (initialCurrentBalance ?? 0);
   const numericAmount = Math.max(0, parseAmountInput(amountInput));
-  const senderBalanceAfter = Math.max(0, senderBalance - numericAmount);
-  const recipientBalanceAfter = toUser ? toUser.balance + numericAmount : 0;
 
   const mutation = useMutation({
     mutationFn: async (data: { fromUserId?: string; to_username: string; amount: number; notes?: string }) => {
@@ -222,8 +220,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
         isReviewStep
           ? 'Please review the sender and recipient details before finalizing the transfer.'
           : isAdmin
-          ? 'Admin transfer between registered accounts. Select sender and recipient from dropdowns.'
-          : 'Send wallet units to another registered user account.'
+            ? 'Admin transfer between registered accounts. Select sender and recipient from dropdowns.'
+            : 'Send wallet units to another registered user account.'
       }
       size="lg"
     >
@@ -443,11 +441,10 @@ export const TransferModal: React.FC<TransferModalProps> = ({
                   type="button"
                   onClick={() => setAmountInput(formatAmountInput(val))}
                   disabled={mutation.isPending}
-                  className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors ${
-                    numericAmount === val
+                  className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors ${numericAmount === val
                       ? 'bg-brand-50 border-brand-300 text-brand-700 font-bold'
                       : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-navy-900'
-                  }`}
+                    }`}
                 >
                   +{formatNumber(val)}
                 </button>
@@ -471,24 +468,6 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-navy-900 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             />
           </div>
-
-          {/* Real-time Calculation Summary Box */}
-          {fromUser && toUser && numericAmount > 0 && (
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs space-y-1.5 animate-in fade-in">
-              <div className="flex justify-between text-slate-600">
-                <span>Sender balance after:</span>
-                <span className="font-mono font-semibold text-navy-900">
-                  {formatNumber(senderBalanceAfter)} units
-                </span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Recipient balance after:</span>
-                <span className="font-mono font-semibold text-emerald-700">
-                  {formatNumber(recipientBalanceAfter)} units
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
