@@ -6,6 +6,7 @@ import { getUsersListApi } from '@/services/api/endpoints';
 import { useDebounce } from '@/hooks/useDebounce';
 import { UserAvatar } from './UserAvatar';
 import { StatusBadge } from './StatusBadge';
+import { RegisterUserModal } from './RegisterUserModal';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
@@ -23,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  UserPlus,
 } from 'lucide-react';
 
 export const UsersListPage: React.FC = () => {
@@ -40,6 +42,7 @@ export const UsersListPage: React.FC = () => {
   const sortOrderParam = (searchParams.get('sortOrder') as SortOrder) || null;
 
   const [searchInput, setSearchInput] = useState(searchParam);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
 
   // Sync debounced search to URL
@@ -302,9 +305,9 @@ export const UsersListPage: React.FC = () => {
 
       {/* Search & Filter Card */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Search Field */}
-          <div className="sm:col-span-2">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3.5">
+          {/* Search Field - reduced width */}
+          <div className="flex-1 sm:max-w-xs md:max-w-sm">
             <label
               htmlFor="searchUserInput"
               className="block text-xs font-semibold uppercase tracking-wider text-navy-700 mb-1.5"
@@ -319,13 +322,13 @@ export const UsersListPage: React.FC = () => {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search name, username or email"
-                className="w-full bg-white text-navy-900 border border-slate-300 rounded-xl pl-10 pr-4 py-2 text-sm hover:border-slate-400 transition-colors focus-ring placeholder:text-slate-400"
+                className="w-full bg-white text-navy-900 border border-slate-300 rounded-xl pl-10 pr-4 py-2 text-sm hover:border-slate-400 transition-colors focus-ring placeholder:text-slate-400 h-[40px]"
               />
             </div>
           </div>
 
           {/* Status Dropdown */}
-          <div>
+          <div className="w-full sm:w-48 shrink-0">
             <label
               htmlFor="statusSelect"
               className="block text-xs font-semibold uppercase tracking-wider text-navy-700 mb-1.5"
@@ -337,7 +340,7 @@ export const UsersListPage: React.FC = () => {
                 id="statusSelect"
                 value={statusParam}
                 onChange={(e) => updateStatus(e.target.value)}
-                className="w-full bg-white text-navy-900 border border-slate-300 rounded-xl px-3.5 py-2 text-sm hover:border-slate-400 transition-colors focus-ring cursor-pointer appearance-none pr-10"
+                className="w-full bg-white text-navy-900 border border-slate-300 rounded-xl px-3.5 py-2 text-sm hover:border-slate-400 transition-colors focus-ring cursor-pointer appearance-none pr-10 h-[40px]"
               >
                 <option value="All statuses">All statuses</option>
                 <option value="Active">Active</option>
@@ -345,6 +348,20 @@ export const UsersListPage: React.FC = () => {
               </select>
               <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 pointer-events-none" />
             </div>
+          </div>
+
+          {/* Register New User Button - positioned directly after Status dropdown */}
+          <div className="w-full sm:w-auto shrink-0 sm:ml-auto">
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={() => setIsRegisterModalOpen(true)}
+              className="w-full sm:w-auto h-[40px] px-4 font-semibold shadow-xs flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Register New User</span>
+            </Button>
           </div>
         </div>
       </div>
@@ -509,6 +526,13 @@ export const UsersListPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Register User Modal */}
+      <RegisterUserModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 };
