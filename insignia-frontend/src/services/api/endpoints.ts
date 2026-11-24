@@ -20,6 +20,9 @@ import {
   AdminTransferRequestDto,
   AdminTopupRequestDto,
   AdminTopupResponseDto,
+  TopupsQueryDto,
+  PaginatedTopupsResponseDto,
+  TopupRecordDto,
 } from '@/types';
 
 // ==========================================
@@ -277,5 +280,31 @@ export async function changeUserPasswordApi(dto: {
   newPassword: string;
 }): Promise<{ message: string }> {
   const response = await apiClient.patch<{ message: string }>('/user/change-password', dto);
+  return response.data;
+}
+
+/**
+ * Fetch paginated top-ups history with filtering, searching, and sorting
+ * GET /admin/topups
+ */
+export async function getTopupsApi(
+  query: TopupsQueryDto = {}
+): Promise<PaginatedTopupsResponseDto> {
+  const response = await apiClient.get<PaginatedTopupsResponseDto>('/admin/topups', {
+    params: query,
+  });
+  return response.data;
+}
+
+/**
+ * Fetch single topup details by ID or Topup Code
+ * GET /admin/topups/:id
+ */
+export async function getTopupByIdApi(
+  idOrCode: string
+): Promise<TopupRecordDto> {
+  const response = await apiClient.get<TopupRecordDto>(
+    `/admin/topups/${encodeURIComponent(idOrCode)}`
+  );
   return response.data;
 }

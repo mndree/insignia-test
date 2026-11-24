@@ -15,6 +15,7 @@ import {
   UserPen,
   ChevronUp,
   ChevronDown,
+  ArrowDownCircle,
 } from 'lucide-react';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { ChangeBiodataModal } from './ChangeBiodataModal';
@@ -36,6 +37,7 @@ const adminNavItems = [
   { name: 'Overview', to: '/', icon: LayoutDashboard },
   { name: 'Users', to: '/users', icon: Users },
   { name: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
+  { name: 'Top Ups', to: '/topups', icon: ArrowDownCircle },
   { name: 'Top Transactions', to: '/top-transactions', icon: TrendingUp },
   { name: 'Top Users', to: '/top-users', icon: Trophy },
 ];
@@ -44,6 +46,7 @@ const userNavItems = [
   { name: 'Overview', to: '/', icon: LayoutDashboard },
   { name: 'My Profile', to: '/profile', icon: UserPen },
   { name: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
+  { name: 'Top Ups', to: '/topups', icon: ArrowDownCircle },
 ];
 
 const SidebarContent: React.FC<SidebarContentProps> = ({

@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { walletService } from '../services/wallet.service.js';
+import { adminService } from '../services/admin.service.js';
 import { authMiddleware, AuthenticatedRequest } from '../auth/auth.middleware.js';
 
 export const walletRouter = Router();
@@ -103,7 +104,7 @@ walletRouter.post('/transfer', authMiddleware, async (req: AuthenticatedRequest,
 // Top transactions per user
 walletRouter.get('/top_transactions_per_user', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
-    const result = await walletService.getTopTransactionsPerUser(req.user);
+    const result = await walletService.getTopTransactionsPerUser(req.user, req.isAdmin);
     return res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -124,6 +125,31 @@ walletRouter.get('/top_users', authMiddleware, async (_req, res, next) => {
 walletRouter.get('/transactions', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
   try {
     const result = await walletService.getTransactions(req.user, req.query);
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Paginated topups list
+walletRouter.get('/topups', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const result = await adminService.getTopups(req.query, {
+      id: req.user?.id,
+      role: req.isAdmin ? 'ADMIN' : 'USER',
+      isAdmin: req.isAdmin,
+    });
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Single topup details
+walletRouter.get('/topups/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await adminService.getTopupById(id);
     return res.status(200).json(result);
   } catch (err) {
     next(err);

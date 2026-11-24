@@ -82,6 +82,31 @@ adminRouter.post('/users/:id/topup', authMiddleware, async (req: AuthenticatedRe
   }
 });
 
+// List topups
+adminRouter.get('/topups', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const result = await adminService.getTopups(req.query, {
+      id: req.user?.id,
+      role: req.user ? 'USER' : 'ADMIN',
+      isAdmin: req.isAdmin,
+    });
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Get single topup details
+adminRouter.get('/topups/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await adminService.getTopupById(id);
+    return res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Change admin password
 adminRouter.patch('/change-password', authMiddleware, async (req: AuthenticatedRequest, res: Response, next) => {
   try {

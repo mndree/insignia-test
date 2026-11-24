@@ -220,41 +220,62 @@ export class WalletService {
     });
   }
 
-  async getTopTransactionsPerUser(user: User): Promise<Array<{ username: string; amount: number }>> {
+  async getTopTransactionsPerUser(user: any, isAdmin: boolean = false): Promise<Array<{ username: string; amount: number }>> {
+    const isGlobalAdmin = isAdmin || user?.username === 'admin';
+
+    if (!isGlobalAdmin) {
+      const transfers = await prisma.transfer.findMany({
+        where: {
+          OR: [{ fromUserId: user.id }, { toUserId: user.id }],
+        },
+        include: {
+          fromUser: true,
+          toUser: true,
+        },
+      });
+
+      const formatted = transfers.map((tx) => {
+        const isOutgoing = tx.fromUserId === user.id;
+        const counterparty = isOutgoing ? tx.toUser.username : tx.fromUser.username;
+        const rawAmount = Number(tx.amount);
+        const amount = isOutgoing ? -rawAmount : rawAmount;
+
+        return {
+          username: counterparty,
+          amount,
+          absAmount: Math.abs(amount),
+          createdAt: tx.createdAt.getTime(),
+        };
+      });
+
+      formatted.sort((a, b) => {
+        if (b.absAmount !== a.absAmount) {
+          return b.absAmount - a.absAmount;
+        }
+        return b.createdAt - a.createdAt;
+      });
+
+      return formatted.slice(0, 10).map(({ username, amount }) => ({
+        username,
+        amount,
+      }));
+    }
+
+    // When viewing as Admin, show platform-wide top transfer transactions
     const transfers = await prisma.transfer.findMany({
-      where: {
-        OR: [{ fromUserId: user.id }, { toUserId: user.id }],
-      },
       include: {
         fromUser: true,
         toUser: true,
       },
+      orderBy: {
+        amount: 'desc',
+      },
+      take: 10,
     });
 
-    const formatted = transfers.map((tx) => {
-      const isOutgoing = tx.fromUserId === user.id;
-      const counterparty = isOutgoing ? tx.toUser.username : tx.fromUser.username;
-      const rawAmount = Number(tx.amount);
-      const amount = isOutgoing ? -rawAmount : rawAmount;
-
-      return {
-        username: counterparty,
-        amount,
-        absAmount: Math.abs(amount),
-        createdAt: tx.createdAt.getTime(),
-      };
-    });
-
-    formatted.sort((a, b) => {
-      if (b.absAmount !== a.absAmount) {
-        return b.absAmount - a.absAmount;
-      }
-      return b.createdAt - a.createdAt;
-    });
-
-    return formatted.slice(0, 10).map(({ username, amount }) => ({
-      username,
-      amount,
+    return transfers.map((tx) => ({
+      username: `@${tx.fromUser.username} → @${tx.toUser.username}`,
+      amount: -Number(tx.amount),
     }));
   }
 
@@ -302,8 +323,8 @@ export class WalletService {
       where: isAdmin
         ? {}
         : {
-            OR: [{ fromUserId: user.id }, { toUserId: user.id }],
-          },
+          OR: [{ fromUserId: user.id }, { toUserId: user.id }],
+        },
       include: {
         fromUser: true,
         toUser: true,
@@ -321,22 +342,28 @@ export class WalletService {
 
     for (const tx of transfers) {
       let counterparty = '';
+      let counterpartyFullName = '';
       let signedAmount = 0;
 
       if (tx.fromUserId === user.id) {
         counterparty = tx.toUser.username;
+        counterpartyFullName = tx.toUser.fullName || tx.toUser.username;
         signedAmount = -Number(tx.amount);
       } else if (tx.toUserId === user.id) {
         counterparty = tx.fromUser.username;
+        counterpartyFullName = tx.fromUser.fullName || tx.fromUser.username;
         signedAmount = Number(tx.amount);
       } else {
         counterparty = tx.toUser.username;
+        counterpartyFullName = tx.toUser.fullName || tx.toUser.username;
         signedAmount = -Number(tx.amount);
       }
 
       unified.push({
         id: tx.transferCode || tx.id.slice(0, 8),
         username: counterparty,
+        fullName: counterpartyFullName,
+        counterpartyName: counterpartyFullName,
         amount: signedAmount,
         created_at: tx.createdAt.toISOString(),
         description: tx.description || tx.notes || `Transfer between @${tx.fromUser.username} and @${tx.toUser.username}`,
@@ -347,6 +374,8 @@ export class WalletService {
       unified.push({
         id: top.topupCode || top.id.slice(0, 8),
         username: 'system',
+        fullName: 'System Top-up',
+        counterpartyName: 'System Top-up',
         amount: Number(top.amount),
         created_at: top.createdAt.toISOString(),
         description: top.notes || 'Direct wallet balance top-up',
@@ -364,6 +393,7 @@ export class WalletService {
         (tx) =>
           tx.id.toLowerCase().includes(term) ||
           tx.username.toLowerCase().includes(term) ||
+          (tx.fullName && tx.fullName.toLowerCase().includes(term)) ||
           (tx.description && tx.description.toLowerCase().includes(term)),
       );
     }

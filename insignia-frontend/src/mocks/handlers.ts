@@ -327,12 +327,19 @@ export const handlers = [
       (t) => t.owner === user.username
     );
 
+    let sourceTransfers = userTransfers;
+    let isAdminView = false;
+    if (user.username === 'admin' || userTransfers.length === 0) {
+      sourceTransfers = transactionsStore;
+      isAdminView = true;
+    }
+
     // Sort by absolute transaction amount descending, take top 10
-    const top10 = [...userTransfers]
+    const top10 = [...sourceTransfers]
       .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
       .slice(0, 10)
       .map((t) => ({
-        username: t.username,
+        username: isAdminView && t.owner !== t.username ? `@${t.owner} → @${t.username}` : t.username,
         amount: t.amount,
       }));
 
@@ -440,7 +447,15 @@ export const handlers = [
 
     const total = filtered.length;
     const startIndex = (page - 1) * pageSize;
-    const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
+    const paginatedItems = filtered.slice(startIndex, startIndex + pageSize).map((t) => {
+      const userObj = usersStore.find((u) => u.username.toLowerCase() === t.username.toLowerCase());
+      const fullName = userObj?.fullName || (t as any).fullName || t.username;
+      return {
+        ...t,
+        fullName,
+        counterpartyName: fullName,
+      };
+    });
 
     return HttpResponse.json(
       {
@@ -502,7 +517,15 @@ export const handlers = [
 
     const total = filtered.length;
     const startIndex = (page - 1) * pageSize;
-    const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
+    const paginatedItems = filtered.slice(startIndex, startIndex + pageSize).map((t) => {
+      const userObj = usersStore.find((u) => u.username.toLowerCase() === t.username.toLowerCase());
+      const fullName = userObj?.fullName || (t as any).fullName || t.username;
+      return {
+        ...t,
+        fullName,
+        counterpartyName: fullName,
+      };
+    });
 
     const totalUsers = usersStore.length;
     const activeUsers = usersStore.filter((u) => u.status === 'Active').length;
@@ -782,9 +805,22 @@ export const handlers = [
   // Get Admin Profile
   http.get('*/admin/profile/:username', ({ params }) => {
     const { username } = params;
-    const user = usersStore.find((u) => u.username.toLowerCase() === String(username).toLowerCase());
+    const cleanUsername = String(username || 'admin').toLowerCase();
+    const user = usersStore.find((u) => u.username.toLowerCase() === cleanUsername);
+    const userTxns = transactionsStore
+      .filter((t) => t.owner?.toLowerCase() === cleanUsername || t.username?.toLowerCase() === cleanUsername)
+      .map((t) => ({
+        id: t.id,
+        counterparty: t.username,
+        direction: t.amount > 0 ? ('incoming' as const) : ('outgoing' as const),
+        amount: t.amount,
+        createdAt: t.created_at,
+        notes: t.description || t.notes,
+      }));
+
     return HttpResponse.json({
       id: user?.id || 'admin-001',
+      userCode: user?.userCode || 'USR-0001',
       username: username || 'admin',
       fullName: user?.fullName || 'System Administrator',
       email: user?.email || 'admin@insignia.wallet',
@@ -794,6 +830,12 @@ export const handlers = [
       avatarUrl: (user as any)?.avatarUrl || null,
       status: 'Active',
       balance: user?.balance || 24500,
+      stats: {
+        availableBalance: user?.balance || 24500,
+        totalReceived: userTxns.filter((t) => t.amount > 0).reduce((acc, c) => acc + c.amount, 0),
+        totalSent: userTxns.filter((t) => t.amount < 0).reduce((acc, c) => acc + Math.abs(c.amount), 0),
+      },
+      recentTransactions: userTxns.slice(0, 10),
     });
   }),
 
@@ -820,4 +862,159 @@ export const handlers = [
       return HttpResponse.json({ message: 'Failed to update profile' }, { status: 400 });
     }
   }),
+
+  // Topups List Mock
+  http.get('*/topups', ({ request }) => {
+    return handleTopupsList(request);
+  }),
+  http.get('*/admin/topups', ({ request }) => {
+    return handleTopupsList(request);
+  }),
+
+  // Topup Detail Mock
+  http.get('*/admin/topups/:id', ({ params }) => {
+    const { id } = params;
+    const found = mockTopupsList.find(
+      (t) => t.id === id || t.topupCode.toLowerCase() === String(id).toLowerCase()
+    );
+    if (!found) {
+      return HttpResponse.json({ message: 'Top-up not found' }, { status: 404 });
+    }
+    return HttpResponse.json(found);
+  }),
 ];
+
+const mockTopupsList = [
+  {
+    id: 'topup-0001',
+    topupCode: 'TOP-0001',
+    userId: 'user-0001',
+    user: {
+      id: 'user-0001',
+      userCode: 'USR-0001',
+      username: 'andre',
+      fullName: 'Andre Juliansyah',
+      email: 'andre.juliansyah@example.com',
+      phone: '+62 812 3456 7890',
+      avatarUrl: null,
+    },
+    amount: 25000,
+    notes: 'Initial wallet balance top-up',
+    attachment: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    createdBy: 'admin',
+    createdAt: '2026-11-11T10:00:00Z',
+  },
+  {
+    id: 'topup-0002',
+    topupCode: 'TOP-0002',
+    userId: 'user-0002',
+    user: {
+      id: 'user-0002',
+      userCode: 'USR-0002',
+      username: 'azra',
+      fullName: 'Azra Putri',
+      email: 'azra.putri@example.com',
+      phone: '+62 813 9876 5432',
+      avatarUrl: null,
+    },
+    amount: 15000,
+    notes: 'Welcome bonus credit',
+    attachment: null,
+    createdBy: 'admin',
+    createdAt: '2026-11-12T10:30:00Z',
+  },
+  {
+    id: 'topup-0003',
+    topupCode: 'TOP-0003',
+    userId: 'user-0003',
+    user: {
+      id: 'user-0003',
+      userCode: 'USR-0003',
+      username: 'raka',
+      fullName: 'Raka Feisal',
+      email: 'raka.feisal@example.com',
+      phone: '+62 811 2345 6789',
+      avatarUrl: null,
+    },
+    amount: 20000,
+    notes: 'Corporate expense allowance',
+    attachment: null,
+    createdBy: 'admin',
+    createdAt: '2026-11-12T11:00:00Z',
+  },
+  {
+    id: 'topup-0004',
+    topupCode: 'TOP-0004',
+    userId: 'user-0004',
+    user: {
+      id: 'user-0004',
+      userCode: 'USR-0004',
+      username: 'alice',
+      fullName: 'Alice Morgan',
+      email: 'alice.morgan@example.com',
+      phone: '+1 415 555 0192',
+      avatarUrl: null,
+    },
+    amount: 10000,
+    notes: 'Admin wallet deposit grant',
+    attachment: null,
+    createdBy: 'admin',
+    createdAt: '2026-11-13T09:15:00Z',
+  },
+  {
+    id: 'topup-0005',
+    topupCode: 'TOP-0005',
+    userId: 'user-0005',
+    user: {
+      id: 'user-0005',
+      userCode: 'USR-0005',
+      username: 'bob',
+      fullName: 'Bob Wilson',
+      email: 'bob.wilson@example.com',
+      phone: '+44 20 7946 0912',
+      avatarUrl: null,
+    },
+    amount: 8000,
+    notes: 'Trading starter balance',
+    attachment: null,
+    createdBy: 'admin',
+    createdAt: '2026-11-14T14:20:00Z',
+  },
+];
+
+function handleTopupsList(request: Request) {
+  const url = new URL(request.url);
+  const page = parseInt(url.searchParams.get('page') || '1', 10);
+  const pageSize = parseInt(url.searchParams.get('pageSize') || '10', 10);
+  const search = (url.searchParams.get('search') || '').toLowerCase().trim();
+
+  let filtered = [...mockTopupsList];
+  if (search) {
+    filtered = filtered.filter(
+      (t) =>
+        t.topupCode.toLowerCase().includes(search) ||
+        t.user.username.toLowerCase().includes(search) ||
+        t.user.fullName.toLowerCase().includes(search) ||
+        (t.notes && t.notes.toLowerCase().includes(search))
+    );
+  }
+
+  const total = filtered.length;
+  const start = (page - 1) * pageSize;
+  const items = filtered.slice(start, start + pageSize);
+
+  const totalAmount = filtered.reduce((acc, curr) => acc + curr.amount, 0);
+  const averageAmount = total > 0 ? Math.round((totalAmount / total) * 100) / 100 : 0;
+
+  return HttpResponse.json({
+    items,
+    page,
+    pageSize,
+    total,
+    stats: {
+      totalTopups: total,
+      totalAmount,
+      averageAmount,
+    },
+  });
+}

@@ -131,6 +131,8 @@ export interface TransactionsQueryDto {
 export interface TransactionRecordDto {
   id: string;
   username: string; // Counterparty username
+  fullName?: string; // Counterparty full name
+  counterpartyName?: string;
   amount: number;   // Signed: positive for incoming, negative for outgoing
   created_at: string;
   description?: string;
@@ -253,6 +255,49 @@ export interface AdminTopupResponseDto {
   userBalanceAfter: number;
   createdBy?: string;
   attachment?: string | null;
+}
+
+export interface TopupRecordDto {
+  id: string;
+  topupCode: string;
+  userId: string;
+  user: {
+    id: string;
+    userCode: string;
+    username: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string | null;
+  };
+  amount: number;
+  notes?: string | null;
+  attachment?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+}
+
+export interface TopupsQueryDto {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  userId?: string;
+}
+
+export interface PaginatedTopupsResponseDto {
+  items: TopupRecordDto[];
+  page: number;
+  pageSize: number;
+  total: number;
+  stats: {
+    totalTopups: number;
+    totalAmount: number;
+    averageAmount: number;
+  };
 }
 
 // ==========================================

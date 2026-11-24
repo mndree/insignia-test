@@ -14,6 +14,33 @@ interface TransactionTableProps {
   onSort?: (field: string) => void;
 }
 
+const KNOWN_USER_FULL_NAMES: Record<string, string> = {
+  andre: 'Andre Juliansyah',
+  azra: 'Azra Putri',
+  raka: 'Raka Feisal',
+  alice: 'Alice Morgan',
+  bob: 'Bob Wilson',
+  charlie: 'Charlie Lee',
+  david: 'David Kim',
+  elena: 'Elena Rostova',
+  fiona: 'Fiona Gallagher',
+  george: 'George Clark',
+  admin: 'System Administrator',
+  system: 'System Top-up',
+};
+
+export function getCounterpartyFullName(username?: string, fallbackFullName?: string): string {
+  if (fallbackFullName && fallbackFullName.trim() && fallbackFullName.toLowerCase() !== username?.toLowerCase()) {
+    return fallbackFullName;
+  }
+  const clean = (username || '').toLowerCase().trim();
+  if (KNOWN_USER_FULL_NAMES[clean]) {
+    return KNOWN_USER_FULL_NAMES[clean];
+  }
+  if (!username) return 'Unknown User';
+  return username.charAt(0).toUpperCase() + username.slice(1);
+}
+
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   items,
   isLoading,
@@ -33,7 +60,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
       if (currentSortField === 'id') {
         cmp = a.id.localeCompare(b.id);
       } else if (currentSortField === 'username' || currentSortField === 'counterparty') {
-        cmp = a.username.localeCompare(b.username);
+        const nameA = a.fullName || a.counterpartyName || getCounterpartyFullName(a.username);
+        const nameB = b.fullName || b.counterpartyName || getCounterpartyFullName(b.username);
+        cmp = nameA.localeCompare(nameB);
       } else if (currentSortField === 'direction') {
         const dirA = a.amount > 0 ? 'incoming' : 'outgoing';
         const dirB = b.amount > 0 ? 'incoming' : 'outgoing';
@@ -135,6 +164,10 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
           <tbody className="divide-y divide-slate-100 text-sm">
             {sortedItems.map((txn) => {
               const isIncoming = txn.amount > 0;
+              const fullName = getCounterpartyFullName(txn.username, txn.fullName || txn.counterpartyName);
+              const isSystem = txn.username === 'system';
+              const displayHandle = !isSystem && txn.username ? `@${txn.username}` : '';
+
               return (
                 <tr
                   key={txn.id}
@@ -147,14 +180,24 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
                   {/* Counterparty */}
                   <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
-                    <span className="font-medium text-navy-800">
-                      @{txn.username}
+                    <span className="block font-semibold text-navy-900 leading-snug">
+                      {fullName}
                     </span>
-                    {txn.description && (
-                      <span className="block text-[11px] text-slate-400 font-normal truncate max-w-xs">
-                        {txn.description}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {displayHandle && (
+                        <span className="text-[11px] font-mono text-slate-400">
+                          {displayHandle}
+                        </span>
+                      )}
+                      {displayHandle && txn.description && (
+                        <span className="text-[11px] text-slate-300">•</span>
+                      )}
+                      {txn.description && (
+                        <span className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
+                          {txn.description}
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Direction Badge */}

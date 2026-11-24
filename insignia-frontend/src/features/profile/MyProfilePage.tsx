@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/useAuth';
-import { getAdminProfileApi, getBalanceApi } from '@/services/api/endpoints';
+import { getAdminProfileApi, getBalanceApi, getTransactionsApi } from '@/services/api/endpoints';
 import { Header } from '@/components/layout/Header';
 import { Spinner } from '@/components/ui/Spinner';
 import { Alert } from '@/components/ui/Alert';
 import { ChangeBiodataModal } from '@/components/layout/ChangeBiodataModal';
 import { ChangePasswordModal } from '@/components/layout/ChangePasswordModal';
 import { TransferModal } from '@/features/overview/TransferModal';
-import { formatWalletUnits, formatShortDate } from '@/utils/formatters';
+import { formatWalletUnits, formatShortDate, formatNumber, formatDateTime } from '@/utils/formatters';
 import {
   User,
   Users,
@@ -27,6 +27,8 @@ import {
   Send,
   CheckCircle2,
   ArrowLeftRight,
+  ArrowDownLeft,
+  ArrowUpRight,
   FileText,
 } from 'lucide-react';
 
@@ -65,6 +67,41 @@ export const MyProfilePage: React.FC = () => {
     queryFn: getBalanceApi,
     staleTime: 1000 * 30,
   });
+
+  // Fetch recent transactions for profile
+  const {
+    data: transactionsData,
+    isLoading: isTransactionsLoading,
+  } = useQuery({
+    queryKey: ['my_profile_transactions', username],
+    queryFn: () => getTransactionsApi({ pageSize: 5 }),
+    enabled: Boolean(username),
+    staleTime: 1000 * 30,
+  });
+
+  const unifiedTransactions = React.useMemo(() => {
+    if (transactionsData?.items && transactionsData.items.length > 0) {
+      return transactionsData.items.map((t) => ({
+        id: t.id,
+        counterparty: t.username,
+        direction: t.amount > 0 ? ('incoming' as const) : ('outgoing' as const),
+        amount: Math.abs(t.amount),
+        createdAt: t.created_at,
+        notes: t.description,
+      }));
+    }
+    if (profile?.recentTransactions && profile.recentTransactions.length > 0) {
+      return profile.recentTransactions.map((t) => ({
+        id: t.id,
+        counterparty: t.counterpartyName || t.counterparty,
+        direction: t.direction || (t.amount > 0 ? 'incoming' : 'outgoing'),
+        amount: Math.abs(t.amount),
+        createdAt: t.createdAt,
+        notes: t.notes,
+      }));
+    }
+    return [];
+  }, [transactionsData, profile?.recentTransactions]);
 
   const isLoading = isProfileLoading || isBalanceLoading;
 
@@ -456,20 +493,110 @@ export const MyProfilePage: React.FC = () => {
             </button>
           </div>
 
-          {/* Empty State */}
-          <div className="py-6 flex items-center justify-center gap-3 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50/80 text-indigo-500 flex items-center justify-center shadow-2xs shrink-0">
-              <FileText className="w-5 h-5" />
+          {/* Transactions List / Empty State */}
+          {isTransactionsLoading && unifiedTransactions.length === 0 ? (
+            <div className="py-8 flex flex-col items-center justify-center">
+              <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mb-2" />
+              <p className="text-xs text-slate-400 font-medium">Loading transactions...</p>
             </div>
-            <div>
-              <h4 className="text-xs sm:text-sm font-extrabold text-navy-900">
-                No transactions yet
-              </h4>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Your transactions will appear here once you start using your wallet.
-              </p>
+          ) : unifiedTransactions.length === 0 ? (
+            /* Empty State */
+            <div className="py-6 flex items-center justify-center gap-3 relative z-10">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50/80 text-indigo-500 flex items-center justify-center shadow-2xs shrink-0">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-extrabold text-navy-900">
+                  No transactions yet
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Your transactions will appear here once you start using your wallet.
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Transactions List */
+            <div className="space-y-2.5 relative z-10 my-1">
+              {unifiedTransactions.slice(0, 4).map((txn) => {
+                const isIncoming = txn.direction === 'incoming';
+                const displayName =
+                  txn.counterparty === 'system' || txn.counterparty === 'System Top-up'
+                    ? 'System Top-up'
+                    : txn.counterparty.startsWith('@')
+                    ? txn.counterparty
+                    : `@${txn.counterparty}`;
+
+                return (
+                  <div
+                    key={txn.id}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 hover:bg-slate-100/70 border border-slate-100 transition-colors gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
+                          isIncoming
+                            ? 'bg-emerald-100/80 text-emerald-600'
+                            : 'bg-rose-100/80 text-rose-600'
+                        }`}
+                      >
+                        {isIncoming ? (
+                          <ArrowDownLeft className="w-4 h-4" />
+                        ) : (
+                          <ArrowUpRight className="w-4 h-4" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs sm:text-sm text-navy-900 truncate">
+                            {displayName}
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                              isIncoming
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                : 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                            }`}
+                          >
+                            {isIncoming ? 'Incoming' : 'Outgoing'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
+                          <span className="font-mono text-slate-500 font-medium">{txn.id}</span>
+                          {txn.notes && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate max-w-[180px] sm:max-w-[280px]">
+                                {txn.notes}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`font-mono font-bold text-xs sm:text-sm block ${
+                          isIncoming ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
+                      >
+                        {isIncoming
+                          ? `+${formatNumber(txn.amount)}`
+                          : `-${formatNumber(txn.amount)}`}{' '}
+                        <span className="font-sans font-normal text-[11px] text-slate-400">
+                          units
+                        </span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {formatDateTime(txn.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Subtle Bottom Curve Decoration */}
           <svg

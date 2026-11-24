@@ -8,6 +8,7 @@ import { OverviewPage } from '@/features/overview/OverviewPage';
 import { UsersListPage } from '@/features/users/UsersListPage';
 import { UserDetailsPage } from '@/features/users/UserDetailsPage';
 import { TransactionsPage } from '@/features/transactions/TransactionsPage';
+import { TopupsPage } from '@/features/topups/TopupsPage';
 import { TopTransactionsPage } from '@/features/top-transactions/TopTransactionsPage';
 import { TopUsersPage } from '@/features/top-users/TopUsersPage';
 import { MyProfilePage } from '@/features/profile/MyProfilePage';
@@ -31,6 +32,8 @@ export const AppRouter: React.FC = () => {
         <Route index element={<OverviewPage />} />
         <Route path="profile" element={<MyProfilePage />} />
         <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="topups" element={<TopupsPage />} />
+        <Route path="top-ups" element={<Navigate to="/topups" replace />} />
 
         {/* Admin Only Routes */}
         <Route

@@ -15,7 +15,6 @@ import {
   RefreshCw,
   ArrowDownLeft,
   ArrowUpRight,
-  Info,
   Layers,
 } from 'lucide-react';
 
@@ -108,22 +107,6 @@ export const TopTransactionsPage: React.FC = () => {
         }
       />
 
-      {/* Specification Context Banner */}
-      <div className="p-4 rounded-xl bg-indigo-50/80 border border-indigo-100 flex items-start gap-3 text-xs text-navy-800">
-        <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-brand-700">Documented Contract Rules</span>
-            <Badge variant="default" size="sm">Top 10 Fixed</Badge>
-          </div>
-          <p className="text-slate-600 leading-relaxed">
-            Per the Stoplight specification for <code className="font-mono font-bold text-navy-900">GET /top_transactions_per_user</code>:
-            Transfers are sorted by absolute amount descending. Outgoing transfers have negative amounts, while incoming transfers have positive amounts.
-            This endpoint returns up to 10 records and does not provide timestamps or unique IDs.
-          </p>
-        </div>
-      </div>
-
       {error && (
         <Alert variant="error" title="Failed to Fetch Top Transactions">
           <div className="flex items-center justify-between gap-3">
@@ -215,7 +198,9 @@ export const TopTransactionsPage: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
                         <span className="font-semibold text-navy-900 font-mono">
-                          @{item.username}
+                          {item.username.startsWith('@') || item.username.includes('→')
+                            ? item.username
+                            : `@${item.username}`}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">

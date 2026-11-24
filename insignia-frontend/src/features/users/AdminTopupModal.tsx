@@ -280,11 +280,10 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
                   type="button"
                   onClick={() => setAmountInput(formatAmountInput(val))}
                   disabled={mutation.isPending}
-                  className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors ${
-                    numericAmount === val
-                      ? 'bg-brand-50 border-brand-300 text-brand-700 font-bold'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-navy-900'
-                  }`}
+                  className={`text-xs px-2.5 py-1 rounded-lg border font-mono transition-colors ${numericAmount === val
+                    ? 'bg-brand-50 border-brand-300 text-brand-700 font-bold'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-navy-900'
+                    }`}
                 >
                   +{formatNumber(val)}
                 </button>

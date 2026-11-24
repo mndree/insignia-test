@@ -286,6 +286,9 @@ export class AdminService {
           include: { fromUser: true },
           orderBy: { createdAt: 'desc' },
         },
+        topups: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 
@@ -301,6 +304,12 @@ export class AdminService {
     let totalReceived = 0;
     for (const t of user.receivedTransfers) {
       totalReceived += Number(t.amount);
+    }
+
+    if (user.topups) {
+      for (const top of user.topups) {
+        totalReceived += Number(top.amount);
+      }
     }
 
     const allTransfers = [
@@ -321,6 +330,15 @@ export class AdminService {
         amount: Number(t.amount),
         createdAt: t.createdAt,
         notes: t.notes,
+      })),
+      ...(user.topups || []).map((top) => ({
+        id: top.topupCode || top.id.slice(0, 8),
+        counterparty: 'system',
+        counterpartyName: 'System Top-up',
+        direction: 'incoming' as const,
+        amount: Number(top.amount),
+        createdAt: top.createdAt,
+        notes: top.notes || 'Balance top-up',
       })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -544,6 +562,191 @@ export class AdminService {
     };
   }
 
+  async getTopups(query: any, userContext?: { id?: string; role?: string; isAdmin?: boolean }) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const pageSize = Math.max(1, Number(query.pageSize) || 10);
+    const skip = (page - 1) * pageSize;
+
+    const where: Prisma.TopupWhereInput = {};
+
+    // If user is not admin and has an ID, filter to only user's topups
+    if (userContext && !userContext.isAdmin && userContext.role !== 'ADMIN' && userContext.id) {
+      where.userId = userContext.id;
+    }
+
+    if (query.userId) {
+      where.userId = query.userId;
+    }
+
+    const conditions: Prisma.TopupWhereInput[] = [];
+
+    if (query.search && String(query.search).trim()) {
+      const term = String(query.search).trim();
+      conditions.push({
+        OR: [
+          { topupCode: { contains: term, mode: 'insensitive' } },
+          { notes: { contains: term, mode: 'insensitive' } },
+          { createdBy: { contains: term, mode: 'insensitive' } },
+          {
+            user: {
+              OR: [
+                { username: { contains: term, mode: 'insensitive' } },
+                { fullName: { contains: term, mode: 'insensitive' } },
+                { email: { contains: term, mode: 'insensitive' } },
+                { userCode: { contains: term, mode: 'insensitive' } },
+              ],
+            },
+          },
+        ],
+      });
+    }
+
+    if (query.dateFrom) {
+      const from = new Date(query.dateFrom);
+      if (!isNaN(from.getTime())) {
+        conditions.push({ createdAt: { gte: from } });
+      }
+    }
+
+    if (query.dateTo) {
+      const to = new Date(query.dateTo);
+      if (!isNaN(to.getTime())) {
+        to.setHours(23, 59, 59, 999);
+        conditions.push({ createdAt: { lte: to } });
+      }
+    }
+
+    if (conditions.length > 0) {
+      where.AND = conditions;
+    }
+
+    const orderDirection: Prisma.SortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
+    let orderBy: Prisma.TopupOrderByWithRelationInput[] = [{ createdAt: 'desc' }];
+
+    if (query.sortBy) {
+      const field = String(query.sortBy).toLowerCase();
+      if (field === 'id' || field === 'topupcode') {
+        orderBy = [{ topupCode: orderDirection }];
+      } else if (field === 'amount') {
+        orderBy = [{ amount: orderDirection }];
+      } else if (field === 'user' || field === 'username') {
+        orderBy = [{ user: { username: orderDirection } }];
+      } else if (field === 'fullname') {
+        orderBy = [{ user: { fullName: orderDirection } }];
+      } else if (field === 'createdby') {
+        orderBy = [{ createdBy: orderDirection }];
+      } else if (field === 'createdat' || field === 'date') {
+        orderBy = [{ createdAt: orderDirection }];
+      }
+    }
+
+    const [items, total, aggregate] = await Promise.all([
+      prisma.topup.findMany({
+        where,
+        skip,
+        take: pageSize,
+        include: {
+          user: {
+            select: {
+              id: true,
+              userCode: true,
+              username: true,
+              fullName: true,
+              email: true,
+              phone: true,
+              avatarUrl: true,
+            },
+          },
+        },
+        orderBy,
+      }),
+      prisma.topup.count({ where }),
+      prisma.topup.aggregate({
+        where,
+        _sum: { amount: true },
+        _avg: { amount: true },
+      }),
+    ]);
+
+    const totalAmount = Number(aggregate._sum.amount || 0);
+    const averageAmount = Number(aggregate._avg.amount || 0);
+
+    return {
+      items: items.map((t) => ({
+        id: t.id,
+        topupCode: t.topupCode || t.id.slice(0, 8),
+        userId: t.userId,
+        user: {
+          id: t.user.id,
+          userCode: t.user.userCode || t.user.id.slice(0, 8),
+          username: t.user.username,
+          fullName: t.user.fullName || t.user.username,
+          email: t.user.email || `${t.user.username}@example.com`,
+          phone: t.user.phone || '-',
+          avatarUrl: t.user.avatarUrl || null,
+        },
+        amount: Number(t.amount),
+        notes: t.notes || null,
+        attachment: t.attachment || null,
+        createdBy: t.createdBy || 'admin',
+        createdAt: t.createdAt.toISOString(),
+      })),
+      page,
+      pageSize,
+      total,
+      stats: {
+        totalTopups: total,
+        totalAmount,
+        averageAmount: Math.round(averageAmount * 100) / 100,
+      },
+    };
+  }
+
+  async getTopupById(idOrCode: string) {
+    const topup = await prisma.topup.findFirst({
+      where: {
+        OR: [{ id: idOrCode }, { topupCode: idOrCode }],
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            userCode: true,
+            username: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!topup) {
+      throw new NotFoundException(`Top-up record '${idOrCode}' not found`);
+    }
+
+    return {
+      id: topup.id,
+      topupCode: topup.topupCode || topup.id.slice(0, 8),
+      userId: topup.userId,
+      user: {
+        id: topup.user.id,
+        userCode: topup.user.userCode || topup.user.id.slice(0, 8),
+        username: topup.user.username,
+        fullName: topup.user.fullName || topup.user.username,
+        email: topup.user.email || `${topup.user.username}@example.com`,
+        phone: topup.user.phone || '-',
+        avatarUrl: topup.user.avatarUrl || null,
+      },
+      amount: Number(topup.amount),
+      notes: topup.notes || null,
+      attachment: topup.attachment || null,
+      createdBy: topup.createdBy || 'admin',
+      createdAt: topup.createdAt.toISOString(),
+    };
+  }
+
   async changeAdminPassword(username: string, newPassword: string, currentPassword?: string) {
     if (!username || !newPassword) {
       throw new BadRequestException('Username and new password are required');
@@ -645,18 +848,7 @@ export class AdminService {
       throw new NotFoundException(`Account '${username}' not found`);
     }
 
-    return {
-      id: user.id,
-      username: user.username,
-      fullName: user.fullName || user.username,
-      email: user.email || `${user.username}@example.com`,
-      phone: user.phone || '',
-      dateOfBirth: user.dateOfBirth || '',
-      gender: user.gender || 'Male',
-      address: user.address || '',
-      avatarUrl: user.avatarUrl || null,
-      status: user.status || 'Active',
-    };
+    return this.getUserDetails(user.id);
   }
 
   async updateAdminProfile(username: string, dto: any) {

@@ -16,7 +16,6 @@ import {
   RefreshCw,
   Medal,
   Users,
-  Info,
   UserCheck,
 } from 'lucide-react';
 
@@ -134,22 +133,6 @@ export const TopUsersPage: React.FC = () => {
           </Button>
         }
       />
-
-      {/* Specification Context Callout */}
-      <div className="p-4 rounded-xl bg-indigo-50/80 border border-indigo-100 flex items-start gap-3 text-xs text-navy-800">
-        <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-brand-700">Documented Contract Rules</span>
-            <Badge variant="default" size="sm">Top 10 Senders</Badge>
-          </div>
-          <p className="text-slate-600 leading-relaxed">
-            Per the Stoplight specification for <code className="font-mono font-bold text-navy-900">GET /top_users</code>:
-            Users are ranked strictly by total aggregated outgoing transfer value (sent to other users).
-            Incoming transfers and balance top-ups do not count toward this leaderboard. Values are displayed as positive numbers.
-          </p>
-        </div>
-      </div>
 
       {error && (
         <Alert variant="error" title="Failed to Fetch Leaderboard">
