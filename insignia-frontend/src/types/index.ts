@@ -39,6 +39,8 @@ export interface BalanceResponseDto {
 export interface TopupDto {
   amount: number;
   attachment?: string;
+  userId?: string;
+  username?: string;
 }
 
 export interface TransferDto {

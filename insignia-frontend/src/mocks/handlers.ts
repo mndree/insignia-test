@@ -784,6 +784,26 @@ export const handlers = [
         notes: body.notes,
       });
 
+      mockTopupsList.unshift({
+        id: `topup-${Date.now()}`,
+        topupCode: code,
+        userId: user.id,
+        user: {
+          id: user.id,
+          userCode: user.userCode,
+          username: user.username,
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          avatarUrl: (user as any).avatarUrl || null,
+        },
+        amount,
+        notes: body.notes || 'Admin top up credit',
+        attachment: body.attachment || null,
+        createdBy: 'admin',
+        createdAt: now,
+      });
+
       return HttpResponse.json(
         {
           success: true,

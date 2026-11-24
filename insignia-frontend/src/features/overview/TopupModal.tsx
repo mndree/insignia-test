@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/features/auth/useAuth';
 import { topupSchema, TopupFormData } from '../auth/schemas';
-import { topupApi } from '@/services/api/endpoints';
+import { topupApi, adminTopupBalanceApi, getUsersListApi } from '@/services/api/endpoints';
+import { UserListItemDto } from '@/types';
+import { UserSelect } from '@/components/ui/UserSelect';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +25,22 @@ interface TopupModalProps {
 const PRESET_AMOUNTS = [100, 500, 1000, 5000];
 
 export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
+  const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
+  const isAdmin = authUser?.role === 'ADMIN' || authUser?.username === 'admin';
+
+  // For Admin: fetch users for selection dropdown (excluding admin)
+  const { data: usersData } = useQuery({
+    queryKey: ['admin_users_all'],
+    queryFn: () => getUsersListApi({ pageSize: 200 }),
+    enabled: isOpen && isAdmin,
+  });
+
+  const availableUsers: UserListItemDto[] = (usersData?.items || []).filter(
+    (u) => u.username.toLowerCase() !== 'admin'
+  );
+
+  const [selectedUser, setSelectedUser] = useState<UserListItemDto | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [displayAmount, setDisplayAmount] = useState<string>('1,000');
@@ -48,17 +66,49 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
     register('amount');
   }, [register]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedUser(null);
+    }
+  }, [isOpen]);
+
   const mutation = useMutation({
-    mutationFn: topupApi,
+    mutationFn: async (variables: { amount: number; attachment: string; userId?: string; username?: string }) => {
+      if (isAdmin && variables.userId) {
+        return adminTopupBalanceApi(variables.userId, {
+          amount: variables.amount,
+          notes: `Admin direct top-up for @${variables.username || 'user'}`,
+          attachment: variables.attachment,
+        });
+      }
+      return topupApi({
+        amount: variables.amount,
+        attachment: variables.attachment,
+        userId: variables.userId,
+        username: variables.username,
+      });
+    },
     onSuccess: (_, variables) => {
-      setSuccessMessage(`Successfully added ${formatNumber(variables.amount)} wallet units!`);
-      showSuccessAlert('Top-up Successful!', `Successfully added ${formatNumber(variables.amount)} wallet units to your account.`);
+      const recipientText = isAdmin && selectedUser ? ` to @${selectedUser.username}` : '';
+      setSuccessMessage(`Successfully added ${formatNumber(variables.amount)} wallet units${recipientText}!`);
+      showSuccessAlert(
+        'Top-up Successful!',
+        `Successfully added ${formatNumber(variables.amount)} wallet units${recipientText}.`
+      );
       // Invalidate balance and transaction queries
       queryClient.invalidateQueries({ queryKey: ['balance'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['top_transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['topups'] });
+      queryClient.invalidateQueries({ queryKey: ['admin_users'] });
+      if (selectedUser) {
+        queryClient.invalidateQueries({ queryKey: ['admin_user_details', selectedUser.id] });
+        queryClient.invalidateQueries({ queryKey: ['admin_user_details', selectedUser.username] });
+      }
+
       reset({ amount: 1000 });
       setDisplayAmount('1,000');
+      setSelectedUser(null);
       setTimeout(() => {
         setSuccessMessage(null);
         onClose();
@@ -74,12 +124,22 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
   const onSubmit = (data: TopupFormData) => {
     setErrorMessage(null);
     setSuccessMessage(null);
+    if (isAdmin && !selectedUser) {
+      setErrorMessage('Please select a user to top up.');
+      showErrorAlert('User Required', 'Please select a target user before submitting.');
+      return;
+    }
     if (!attachment) {
       setErrorMessage('Proof of payment / receipt attachment is required.');
       showErrorAlert('Attachment Required', 'Please attach proof of payment / transaction receipt before submitting.');
       return;
     }
-    mutation.mutate({ amount: data.amount, attachment });
+    mutation.mutate({
+      amount: data.amount,
+      attachment,
+      userId: selectedUser?.id,
+      username: selectedUser?.username,
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,6 +182,7 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
       setSuccessMessage(null);
       reset({ amount: 1000 });
       setDisplayAmount('1,000');
+      setSelectedUser(null);
       handleRemoveAttachment();
       onClose();
     }
@@ -132,7 +193,11 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
       isOpen={isOpen}
       onClose={handleClose}
       title="Top Up Wallet Balance"
-      description="Add wallet units to your account. Amount must be between 1 and 9,999,999 units."
+      description={
+        isAdmin
+          ? "Select a user to credit wallet units directly. Amount must be between 1 and 9,999,999 units."
+          : "Add wallet units to your account. Amount must be between 1 and 9,999,999 units."
+      }
       size="md"
     >
       {errorMessage && (
@@ -156,6 +221,23 @@ export const TopupModal: React.FC<TopupModalProps> = ({ isOpen, onClose }) => {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {isAdmin && (
+          <div className="space-y-1">
+            <UserSelect
+              label="Select User to Top Up"
+              users={availableUsers}
+              selectedUser={selectedUser}
+              onSelect={(u) => {
+                setSelectedUser(u);
+                setErrorMessage(null);
+              }}
+              placeholder="Select user that want to top up balance..."
+              required
+              disabled={mutation.isPending}
+            />
+          </div>
+        )}
+
         <Input
           label="Top-Up Amount (units)"
           type="text"

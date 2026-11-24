@@ -96,7 +96,7 @@ export class WalletService {
     return { token };
   }
 
-  async topup(user: User, dto: { amount?: number | string; notes?: string; attachment?: string }, createdBy: string = 'admin'): Promise<void> {
+  async topup(user: User, dto: { amount?: number | string; notes?: string; attachment?: string; userId?: string; username?: string }, createdBy: string = 'admin'): Promise<void> {
     const numAmount = Number(dto.amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new BadRequestException('Topup amount must be greater than 0');
@@ -106,13 +106,28 @@ export class WalletService {
       throw new BadRequestException('Attachment is required');
     }
 
+    let targetUser = user;
+    if (dto.userId || dto.username) {
+      const found = await prisma.user.findFirst({
+        where: {
+          OR: [
+            ...(dto.userId ? [{ id: dto.userId }] : []),
+            ...(dto.username ? [{ username: dto.username }] : []),
+          ],
+        },
+      });
+      if (found) {
+        targetUser = found;
+      }
+    }
+
     const decimalAmount = new Prisma.Decimal(numAmount);
     const topupCount = await prisma.topup.count();
     const topupCode = `TOP-${1001 + topupCount}`;
 
     await prisma.$transaction(async (tx) => {
       await tx.user.update({
-        where: { id: user.id },
+        where: { id: targetUser.id },
         data: {
           balance: {
             increment: decimalAmount,
@@ -123,7 +138,7 @@ export class WalletService {
       await tx.topup.create({
         data: {
           topupCode,
-          userId: user.id,
+          userId: targetUser.id,
           amount: decimalAmount,
           notes: dto.notes?.trim() || null,
           attachment: dto.attachment?.trim() || null,
