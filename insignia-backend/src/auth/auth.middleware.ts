@@ -51,18 +51,14 @@ export async function authMiddleware(
         });
       }
 
-      let user = await prisma.user.findUnique({
-        where: { username: admin.username },
-      });
-
-      if (!user) {
-        user = await prisma.user.create({
-          data: { username: admin.username, balance: 1000 },
-        });
-      }
-
       req.admin = admin;
-      req.user = user;
+      req.user = {
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName || 'System Administrator',
+        balance: 0,
+        status: 'Active',
+      } as any;
       req.isAdmin = true;
       return next();
     }

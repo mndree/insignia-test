@@ -4,60 +4,50 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding PostgreSQL database for Insignia Wallet...');
+  console.log('🌱 Starting database seed for Insignia Wallet...');
 
-  // 1. Clear existing records cleanly
+  // 1. Clean existing records in correct foreign key order
   await prisma.transfer.deleteMany();
   await prisma.topup.deleteMany();
   await prisma.user.deleteMany();
   await prisma.admin.deleteMany();
 
-  const commonPasswordHash = await bcrypt.hash('password123', 10);
-  const adminPasswordHash = await bcrypt.hash('admin123', 10);
+  console.log('🧹 Cleaned existing tables (admins, users, transfers, topups).');
 
-  // 2. Seed Admin account
-  const adminRecord = await prisma.admin.create({
+  // 2. Hash passwords
+  const adminPasswordHash = await bcrypt.hash('admin123', 10);
+  const userPasswordHash = await bcrypt.hash('PassWord!@#123', 10);
+
+  // 3. Seed Admin Table (EXACTLY 1 DATA)
+  const admin = await prisma.admin.create({
     data: {
       username: 'admin',
       password: adminPasswordHash,
-    },
-  });
-
-  // Admin user record
-  const adminUser = await prisma.user.create({
-    data: {
-      userCode: 'USR-0000',
-      username: 'admin',
       fullName: 'System Administrator',
       email: 'admin@insignia.wallet',
-      phone: '+1 555 0100',
-      dateOfBirth: '01 Jan 1990',
-      address: 'Central Admin, Jakarta',
-      status: 'Active',
-      password: adminPasswordHash,
-      token: 'session-token-admin',
-      balance: 18150,
-      createdAt: new Date('2026-10-01T00:00:00+07:00'),
-      lastLoginAt: new Date('2026-11-18T17:00:00+07:00'),
+      phone: '+62 811 0000 1111',
+      dateOfBirth: '15/05/1990',
+      gender: 'Male',
+      address: 'Central Jakarta, Indonesia',
     },
   });
+  console.log(`✅ Seeded 1 Admin: ${admin.username} (password: admin123)`);
 
-  // 3. Seed Key Users (from UI mockups)
-  const keyUsers = [
+  // 4. Seed Users Table (EXACTLY 10 DATA, all with password "PassWord!@#123")
+  const userData = [
     {
       userCode: 'USR-0001',
       username: 'andre',
       fullName: 'Andre Juliansyah',
-      email: 'andre.juliansyah@example.com',
-      phone: '+62 812 3456 7890',
-      dateOfBirth: '15 May 1996',
-      address: 'South Jakarta, Indonesia',
+      email: 'juliansyahmandree@gmail.com',
+      phone: '+62 878 4388 0148',
+      dateOfBirth: '22/10/1999',
+      gender: 'Male',
+      address: 'Apartemen Belmont Residence Tower Mont Blanc Unit 1901, Jl. Kebon Jeruk Indah Utama No.8, RT.8/RW.7',
       status: 'Active',
-      password: commonPasswordHash,
-      token: 'mock-token-andre-111',
-      balance: 24500,
-      createdAt: new Date('2026-11-18T16:10:00+07:00'),
-      lastLoginAt: new Date('2026-11-18T16:35:00+07:00'),
+      password: userPasswordHash,
+      balance: 19500,
+      createdAt: new Date('2026-11-01T08:00:00Z'),
     },
     {
       userCode: 'USR-0002',
@@ -65,14 +55,13 @@ async function main() {
       fullName: 'Azra Putri',
       email: 'azra.putri@example.com',
       phone: '+62 813 9876 5432',
-      dateOfBirth: '22 Aug 1998',
-      address: 'Bandung, Indonesia',
+      dateOfBirth: '22/08/1998',
+      gender: 'Female',
+      address: 'Jl. Dago No. 124, Bandung, Jawa Barat',
       status: 'Active',
-      password: commonPasswordHash,
-      token: 'mock-token-azra-222',
-      balance: 18250,
-      createdAt: new Date('2026-11-17T14:15:00+07:00'),
-      lastLoginAt: new Date('2026-11-18T11:20:00+07:00'),
+      password: userPasswordHash,
+      balance: 15000,
+      createdAt: new Date('2026-11-02T09:30:00Z'),
     },
     {
       userCode: 'USR-0003',
@@ -80,14 +69,13 @@ async function main() {
       fullName: 'Raka Feisal',
       email: 'raka.feisal@example.com',
       phone: '+62 811 2345 6789',
-      dateOfBirth: '10 Feb 1995',
-      address: 'Surabaya, Indonesia',
+      dateOfBirth: '10/02/1995',
+      gender: 'Male',
+      address: 'Jl. Pemuda No. 45, Surabaya, Jawa Timur',
       status: 'Active',
-      password: commonPasswordHash,
-      token: 'mock-token-raka-333',
-      balance: 32000,
-      createdAt: new Date('2026-11-16T11:20:00+07:00'),
-      lastLoginAt: new Date('2026-11-18T10:00:00+07:00'),
+      password: userPasswordHash,
+      balance: 19000,
+      createdAt: new Date('2026-11-03T10:15:00Z'),
     },
     {
       userCode: 'USR-0004',
@@ -95,14 +83,13 @@ async function main() {
       fullName: 'Alice Morgan',
       email: 'alice.morgan@example.com',
       phone: '+1 415 555 0192',
-      dateOfBirth: '03 Dec 1994',
-      address: 'San Francisco, CA, USA',
-      status: 'Inactive',
-      password: commonPasswordHash,
-      token: 'mock-token-alice-444',
-      balance: 12800,
-      createdAt: new Date('2026-11-15T16:05:00+07:00'),
-      lastLoginAt: new Date('2026-11-15T16:10:00+07:00'),
+      dateOfBirth: '03/12/1994',
+      gender: 'Female',
+      address: '742 Market St, San Francisco, CA 94102, USA',
+      status: 'Active',
+      password: userPasswordHash,
+      balance: 9500,
+      createdAt: new Date('2026-11-04T11:00:00Z'),
     },
     {
       userCode: 'USR-0005',
@@ -110,14 +97,13 @@ async function main() {
       fullName: 'Bob Wilson',
       email: 'bob.wilson@example.com',
       phone: '+44 20 7946 0912',
-      dateOfBirth: '17 Jul 1993',
-      address: 'London, UK',
+      dateOfBirth: '17/07/1993',
+      gender: 'Male',
+      address: '10 Downing St, London SW1A 2AA, UK',
       status: 'Active',
-      password: commonPasswordHash,
-      token: 'mock-token-bob-555',
-      balance: 8450,
-      createdAt: new Date('2026-11-14T13:30:00+07:00'),
-      lastLoginAt: new Date('2026-11-18T08:45:00+07:00'),
+      password: userPasswordHash,
+      balance: 9000,
+      createdAt: new Date('2026-11-05T12:45:00Z'),
     },
     {
       userCode: 'USR-0006',
@@ -125,285 +111,171 @@ async function main() {
       fullName: 'Charlie Lee',
       email: 'charlie.lee@example.com',
       phone: '+65 9123 4567',
-      dateOfBirth: '29 Oct 1991',
-      address: 'Singapore',
+      dateOfBirth: '29/10/1991',
+      gender: 'Male',
+      address: '25 Marina Bay Financial Centre, Singapore 018981',
       status: 'Active',
-      password: commonPasswordHash,
-      token: 'mock-token-charlie-666',
-      balance: 21600,
-      createdAt: new Date('2026-11-13T10:10:00+07:00'),
-      lastLoginAt: new Date('2026-11-17T19:30:00+07:00'),
+      password: userPasswordHash,
+      balance: 25000,
+      createdAt: new Date('2026-11-06T13:20:00Z'),
+    },
+    {
+      userCode: 'USR-0007',
+      username: 'david',
+      fullName: 'David Kim',
+      email: 'david.kim@example.com',
+      phone: '+82 10 1234 5678',
+      dateOfBirth: '14/04/1997',
+      gender: 'Male',
+      address: '123 Teheran-ro, Gangnam-gu, Seoul, South Korea',
+      status: 'Active',
+      password: userPasswordHash,
+      balance: 11000,
+      createdAt: new Date('2026-11-07T14:10:00Z'),
+    },
+    {
+      userCode: 'USR-0008',
+      username: 'elena',
+      fullName: 'Elena Rostova',
+      email: 'elena.rostova@example.com',
+      phone: '+33 1 4268 5500',
+      dateOfBirth: '08/09/1996',
+      gender: 'Female',
+      address: '14 Rue de Rivoli, 75004 Paris, France',
+      status: 'Active',
+      password: userPasswordHash,
+      balance: 17000,
+      createdAt: new Date('2026-11-08T15:00:00Z'),
+    },
+    {
+      userCode: 'USR-0009',
+      username: 'fiona',
+      fullName: 'Fiona Gallagher',
+      email: 'fiona.gallagher@example.com',
+      phone: '+1 312 555 0144',
+      dateOfBirth: '21/01/1998',
+      gender: 'Female',
+      address: '2119 S Michigan Ave, Chicago, IL 60616, USA',
+      status: 'Active',
+      password: userPasswordHash,
+      balance: 13000,
+      createdAt: new Date('2026-11-09T16:30:00Z'),
+    },
+    {
+      userCode: 'USR-0010',
+      username: 'george',
+      fullName: 'George Clark',
+      email: 'george.clark@example.com',
+      phone: '+61 2 9374 4000',
+      dateOfBirth: '05/06/1992',
+      gender: 'Male',
+      address: '48 Pirrama Rd, Pyrmont NSW 2009, Australia',
+      status: 'Inactive',
+      password: userPasswordHash,
+      balance: 11000,
+      createdAt: new Date('2026-11-10T17:00:00Z'),
     },
   ];
 
-  const userMap = new Map<string, string>();
-  userMap.set('admin', adminUser.id);
+  const userMap = new Map<string, any>();
 
-  for (const u of keyUsers) {
-    const record = await prisma.user.create({
-      data: u,
-    });
-    userMap.set(u.username, record.id);
+  for (const u of userData) {
+    const created = await prisma.user.create({ data: u });
+    userMap.set(u.username, created);
   }
+  console.log(`✅ Seeded ${userMap.size} Users (all with password: PassWord!@#123).`);
 
-  // 4. Create remaining users to reach exactly 128 users
-  // Target: 128 Total, 116 Active, 12 Inactive (Alice + 11 others = 12 Inactive)
-  // Target sum: exactly 845,250 units
-  const initialSum = keyUsers.reduce((sum, u) => sum + u.balance, 0); // 117,600
-  const remainingSum = 845250 - initialSum; // 727,650
-  const remainingCount = 128 - keyUsers.length; // 122 users
-  const avgBalance = Math.floor(remainingSum / remainingCount);
-
-  const firstNames = ['David', 'Elena', 'Fiona', 'George', 'Hannah', 'Ian', 'Julia', 'Kevin', 'Luna', 'Marcus', 'Nadia', 'Oscar', 'Priya', 'Quentin', 'Rachel', 'Sam', 'Tara', 'Victor', 'Wendy', 'Xavier', 'Yara', 'Zack'];
-  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore'];
-
-  let accumulatedBalance = 0;
-
-  for (let i = 7; i <= 128; i++) {
-    const userNum = String(i).padStart(4, '0');
-    const fName = firstNames[(i * 3) % firstNames.length];
-    const lName = lastNames[(i * 7) % lastNames.length];
-    const username = `${fName.toLowerCase()}_${lName.toLowerCase()}${i}`;
-    const isInactive = i >= 118; // 11 inactive + Alice = 12 inactive total -> exactly 116 active!
-
-    let bal = (i === 128)
-      ? (remainingSum - accumulatedBalance)
-      : Math.max(500, Math.round((avgBalance + ((i % 10) - 5) * 500) / 50) * 50);
-
-    accumulatedBalance += bal;
-
-    const daysAgo = Math.min(60, Math.floor(i / 2));
-    const createdDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
-
-    const rec = await prisma.user.create({
-      data: {
-        userCode: `USR-${userNum}`,
-        username,
-        fullName: `${fName} ${lName}`,
-        email: `${fName.toLowerCase()}.${lName.toLowerCase()}@example.com`,
-        phone: `+1 555 ${String(1000 + i)}`,
-        dateOfBirth: '12 Jan 1995',
-        address: 'New York, USA',
-        status: isInactive ? 'Inactive' : 'Active',
-        password: commonPasswordHash,
-        token: `session-token-${username}`,
-        balance: bal,
-        createdAt: createdDate,
-        lastLoginAt: new Date(Date.now() - (i % 7) * 24 * 60 * 60 * 1000),
-      },
-    });
-    userMap.set(username, rec.id);
-  }
-
-  // 5. Seed Andre's specific transfers (matching the User Details mockup)
-  const andreId = userMap.get('andre')!;
-  const azraId = userMap.get('azra')!;
-  const rakaId = userMap.get('raka')!;
-  const aliceId = userMap.get('alice')!;
-  const bobId = userMap.get('bob')!;
-  const charlieId = userMap.get('charlie')!;
-
-  const specificTransfers = [
-    {
-      transferCode: 'TXN-9021',
-      fromUserId: andreId,
-      toUserId: azraId,
-      amount: 2500,
-      notes: 'Project payment',
-      description: 'Contractor settlement payout',
-      createdAt: new Date('2026-11-18T10:45:00+07:00'),
-    },
-    {
-      transferCode: 'TXN-9020',
-      fromUserId: rakaId,
-      toUserId: andreId,
-      amount: 1800,
-      notes: 'Infrastructure reimbursement',
-      description: 'Reimbursement for infrastructure',
-      createdAt: new Date('2026-11-17T14:20:00+07:00'),
-    },
-    {
-      transferCode: 'TXN-9019',
-      fromUserId: andreId,
-      toUserId: aliceId,
-      amount: 1200,
-      notes: 'Design asset fee',
-      description: 'Design asset license fee',
-      createdAt: new Date('2026-11-16T11:05:00+07:00'),
-    },
-    {
-      transferCode: 'TXN-9015',
-      fromUserId: bobId,
-      toUserId: andreId,
-      amount: 38200,
-      notes: 'Treasury reserve fund transfer',
-      description: 'Treasury reserve fund transfer',
-      createdAt: new Date('2026-11-10T08:00:00+07:00'),
-    },
-    {
-      transferCode: 'TXN-9014',
-      fromUserId: andreId,
-      toUserId: charlieId,
-      amount: 11800,
-      notes: 'Quarterly node validator allocation',
-      description: 'Quarterly node validator allocation',
-      createdAt: new Date('2026-11-08T15:30:00+07:00'),
-    },
+  // 5. Seed Topups (Realistic funding records)
+  // Total topups = 25k + 15k + 20k + 10k + 8k + 30k + 12k + 14k + 10k + 5k = 149,000 units
+  const topupsData = [
+    { username: 'andre', amount: 25000, notes: 'Initial wallet balance top-up', date: '2026-11-11T10:00:00Z' },
+    { username: 'azra', amount: 15000, notes: 'Welcome bonus credit', date: '2026-11-12T10:30:00Z' },
+    { username: 'raka', amount: 20000, notes: 'Corporate expense allowance', date: '2026-11-12T11:00:00Z' },
+    { username: 'alice', amount: 10000, notes: 'Admin wallet deposit grant', date: '2026-11-13T09:15:00Z' },
+    { username: 'bob', amount: 8000, notes: 'Trading starter balance', date: '2026-11-14T14:20:00Z' },
+    { username: 'charlie', amount: 30000, notes: 'Institutional liquidity provision', date: '2026-11-15T15:00:00Z' },
+    { username: 'david', amount: 12000, notes: 'Direct wallet credit', date: '2026-11-16T08:45:00Z' },
+    { username: 'elena', amount: 14000, notes: 'Platform promotional reward', date: '2026-11-17T13:10:00Z' },
+    { username: 'fiona', amount: 10000, notes: 'Initial account funding', date: '2026-11-18T16:00:00Z' },
+    { username: 'george', amount: 5000, notes: 'Trial balance credit', date: '2026-11-19T11:30:00Z' },
   ];
 
-  for (const tx of specificTransfers) {
-    await prisma.transfer.create({ data: tx });
-  }
-
-  // 6. Seed Raka's outgoing transfers to match Stoplight GET /top_users mock (raka transacted_value: 45000)
-  // raka already sent 1800 to andre above. Need 43200 more:
-  await prisma.transfer.create({
-    data: {
-      transferCode: 'TXN-9028',
-      fromUserId: rakaId,
-      toUserId: charlieId,
-      amount: 20000,
-      notes: 'Liquidity pool seeding',
-      description: 'Liquidity provision',
-      createdAt: new Date('2026-11-12T09:15:00+07:00'),
-    },
-  });
-  await prisma.transfer.create({
-    data: {
-      transferCode: 'TXN-9027',
-      fromUserId: rakaId,
-      toUserId: azraId,
-      amount: 15000,
-      notes: 'Marketing sponsorship',
-      description: 'Regional community grant',
-      createdAt: new Date('2026-11-14T11:45:00+07:00'),
-    },
-  });
-  await prisma.transfer.create({
-    data: {
-      transferCode: 'TXN-9026',
-      fromUserId: rakaId,
-      toUserId: bobId,
-      amount: 8200,
-      notes: 'Validator operational lease',
-      description: 'Cloud validator hosting',
-      createdAt: new Date('2026-11-15T15:20:00+07:00'),
-    },
-  });
-
-  // 7. Seed Admin transfers and top-ups (for admin user history)
-  await prisma.topup.create({
-    data: {
-      topupCode: 'TOP-1001',
-      userId: adminUser.id,
-      amount: 10000,
-      notes: 'Initial treasury seed',
-      createdAt: new Date('2026-11-04T07:30:00+07:00'),
-    },
-  });
-
-  await prisma.topup.create({
-    data: {
-      topupCode: 'TOP-1002',
-      userId: adminUser.id,
-      amount: 5000,
-      notes: 'Secondary operational top-up',
-      createdAt: new Date('2026-11-15T08:00:00+07:00'),
-    },
-  });
-
-  await prisma.transfer.create({
-    data: {
-      transferCode: 'TXN-9018',
-      fromUserId: adminUser.id,
-      toUserId: bobId,
-      amount: 750,
-      notes: 'External security audit retainer',
-      description: 'External security audit retainer',
-      createdAt: new Date('2026-11-14T16:30:00+07:00'),
-    },
-  });
-
-  await prisma.transfer.create({
-    data: {
-      transferCode: 'TXN-9017',
-      fromUserId: charlieId,
-      toUserId: adminUser.id,
-      amount: 3200,
-      notes: 'Treasury reserve allocation',
-      description: 'Treasury reserve allocation',
-      createdAt: new Date('2026-11-13T14:15:00+07:00'),
-    },
-  });
-
-  await prisma.transfer.create({
-    data: {
-      transferCode: 'TXN-9016',
-      fromUserId: azraId,
-      toUserId: adminUser.id,
-      amount: 1500,
-      notes: 'Escrow release credit',
-      description: 'Escrow release credit',
-      createdAt: new Date('2026-11-08T12:20:00+07:00'),
-    },
-  });
-
-  await prisma.transfer.create({
-    data: {
-      transferCode: 'TXN-9013',
-      fromUserId: adminUser.id,
-      toUserId: rakaId,
-      amount: 800,
-      notes: 'API integration fee',
-      description: 'API integration fee',
-      createdAt: new Date('2026-11-06T09:10:00+07:00'),
-    },
-  });
-
-  // 8. Generate additional realistic transfers across other users for the last 30 days
-  // Exclude 'andre' and 'admin' so their exact mock totals (Total Received: 40,000, Total Sent: 15,500) remain exact!
-  const otherUserIds = Array.from(userMap.entries())
-    .filter(([username]) => username !== 'andre' && username !== 'admin')
-    .map(([, id]) => id);
-  let txCounter = 9029;
-
-  for (let day = 30; day >= 1; day--) {
-    const txDate = new Date(Date.now() - day * 24 * 60 * 60 * 1000 + (day * 37) % 86400000);
-    const countThisDay = 2 + (day % 4); // 2 to 5 transfers per day
-
-    for (let k = 0; k < countThisDay; k++) {
-      const fromIdx = (day * 5 + k * 7) % otherUserIds.length;
-      let toIdx = (day * 3 + k * 11 + 1) % otherUserIds.length;
-      if (toIdx === fromIdx) toIdx = (toIdx + 1) % otherUserIds.length;
-
-      const amounts = [150, 250, 400, 650, 1100, 1850, 2400, 3500, 5000];
-      const amt = amounts[(day + k) % amounts.length];
-      const code = `TXN-${txCounter++}`;
-
-      await prisma.transfer.create({
+  let topupCounter = 1;
+  for (const t of topupsData) {
+    const user = userMap.get(t.username);
+    if (user) {
+      await prisma.topup.create({
         data: {
-          transferCode: code,
-          fromUserId: otherUserIds[fromIdx],
-          toUserId: otherUserIds[toIdx],
-          amount: amt,
-          notes: `Settlement batch ${day}-${k + 1}`,
-          description: `Peer transfer for services (#${code})`,
-          createdAt: txDate,
+          topupCode: `TOP-${String(topupCounter++).padStart(4, '0')}`,
+          userId: user.id,
+          amount: t.amount,
+          notes: t.notes,
+          createdBy: 'admin',
+          createdAt: new Date(t.date),
         },
       });
     }
   }
+  console.log(`✅ Seeded ${topupsData.length} Topup records.`);
 
-  console.log(`✅ Successfully seeded PostgreSQL database:`);
-  console.log(`   - 128 Users (116 Active, 12 Inactive, Total Balance = 845,250 units)`);
-  console.log(`   - Admin credentials: admin / admin123`);
-  console.log(`   - User credentials: andre / password123`);
-  console.log(`   - Over 100 real transactions across 30 days for charts & paginated history`);
+  // 6. Seed Transfers (Realistic P2P volume distribution)
+  const transfersData = [
+    { from: 'andre', to: 'azra', amount: 5000, notes: 'Invoice settlement #INV-2026-01', date: '2026-11-19T14:00:00Z' },
+    { from: 'andre', to: 'raka', amount: 2500, notes: 'Development sprint payment', date: '2026-11-20T09:30:00Z' },
+    { from: 'andre', to: 'alice', amount: 1000, notes: 'Design asset fee', date: '2026-11-20T11:15:00Z' },
+    { from: 'charlie', to: 'andre', amount: 3000, notes: 'Consulting services reimbursement', date: '2026-11-20T16:45:00Z' },
+    { from: 'azra', to: 'bob', amount: 3000, notes: 'Content creation payout', date: '2026-11-21T10:00:00Z' },
+    { from: 'azra', to: 'raka', amount: 2000, notes: 'Cloud infrastructure share', date: '2026-11-21T13:20:00Z' },
+    { from: 'raka', to: 'charlie', amount: 4000, notes: 'API server integration settlement', date: '2026-11-21T15:30:00Z' },
+    { from: 'raka', to: 'david', amount: 1500, notes: 'Localization translation fee', date: '2026-11-22T08:15:00Z' },
+    { from: 'alice', to: 'elena', amount: 1500, notes: 'Marketing campaign distribution', date: '2026-11-22T10:45:00Z' },
+    { from: 'bob', to: 'fiona', amount: 2000, notes: 'Video editing freelance fee', date: '2026-11-22T12:00:00Z' },
+    { from: 'charlie', to: 'george', amount: 6000, notes: 'Hardware procurement advance', date: '2026-11-22T14:30:00Z' },
+    { from: 'david', to: 'elena', amount: 2500, notes: 'Smart contract security review', date: '2026-11-23T09:00:00Z' },
+    { from: 'elena', to: 'fiona', amount: 1000, notes: 'Social media management payout', date: '2026-11-23T11:20:00Z' },
+  ];
+
+  let transferCounter = 1;
+  for (const tx of transfersData) {
+    const sender = userMap.get(tx.from);
+    const recipient = userMap.get(tx.to);
+    if (sender && recipient) {
+      await prisma.transfer.create({
+        data: {
+          transferCode: `TX-${String(transferCounter++).padStart(4, '0')}`,
+          fromUserId: sender.id,
+          toUserId: recipient.id,
+          amount: tx.amount,
+          notes: tx.notes,
+          description: tx.notes,
+          createdAt: new Date(tx.date),
+          updatedAt: new Date(tx.date),
+        },
+      });
+    }
+  }
+  console.log(`✅ Seeded ${transfersData.length} Transfer records.`);
+
+  // 7. Verification Summary
+  const countAdmins = await prisma.admin.count();
+  const countUsers = await prisma.user.count();
+  const countTopups = await prisma.topup.count();
+  const countTransfers = await prisma.transfer.count();
+  const sumBalance = await prisma.user.aggregate({ _sum: { balance: true } });
+
+  console.log('====================================================');
+  console.log(`✨ DATABASE SEED COMPLETED SUCCESSFULLY:`);
+  console.log(`   - Admins count:    ${countAdmins} (Expected: 1)`);
+  console.log(`   - Users count:     ${countUsers} (Expected: 10)`);
+  console.log(`   - Topups count:    ${countTopups}`);
+  console.log(`   - Transfers count: ${countTransfers}`);
+  console.log(`   - Total Users Bal: ${sumBalance._sum.balance} units`);
+  console.log('====================================================');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding error:', e);
+    console.error('❌ Seeding failed:', e);
     process.exit(1);
   })
   .finally(async () => {

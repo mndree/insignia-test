@@ -34,28 +34,6 @@ export class AdminService {
       },
     });
 
-    await prisma.user.upsert({
-      where: { username: 'admin' },
-      create: {
-        userCode: 'USR-0000',
-        username: 'admin',
-        fullName: 'Andre Juliansyah',
-        email: 'andre@example.com',
-        phone: '+62 812 3456 7890',
-        dateOfBirth: '15 May 1996',
-        address: 'Jakarta, Indonesia',
-        status: 'Active',
-        balance: 14250,
-      },
-      update: {
-        fullName: 'Andre Juliansyah',
-        email: 'andre@example.com',
-        phone: '+62 812 3456 7890',
-        dateOfBirth: '15 May 1996',
-        address: 'Jakarta, Indonesia',
-      },
-    });
-
     console.log(`[AdminService] Ensured default admin account: 'admin' / 'admin123' with complete biodata`);
   }
 
@@ -127,23 +105,11 @@ export class AdminService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      const user = await prisma.user.upsert({
-        where: { username: admin.username },
-        create: {
-          userCode: 'USR-0000',
-          username: admin.username,
-          fullName: admin.fullName || 'System Administrator',
-          balance: 18150,
-          status: 'Active',
-        },
-        update: {},
-      });
-
       const token = signJwt({
         sub: admin.id,
         username: admin.username,
         role: 'ADMIN',
-        userId: user.id,
+        userId: admin.id,
       });
 
       return {
@@ -155,7 +121,7 @@ export class AdminService {
           fullName: admin.fullName || 'System Administrator',
         },
         user: {
-          id: user.id,
+          id: admin.id,
           username: admin.username,
           fullName: admin.fullName || 'System Administrator',
           role: 'ADMIN',
