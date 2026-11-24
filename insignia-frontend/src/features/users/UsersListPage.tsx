@@ -432,10 +432,13 @@ export const UsersListPage: React.FC = () => {
                   >
                     {/* User: Avatar + Name + @username */}
                     <td className="py-4 px-4 sm:px-6 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
+                      <div
+                        className="flex items-center gap-3 cursor-pointer group"
+                        onClick={() => navigate(`/users/${user.id}`)}
+                      >
                         <UserAvatar name={user.fullName || user.username} size="md" avatarUrl={user.avatarUrl} />
                         <div>
-                          <span className="block font-bold text-navy-900 leading-snug">
+                          <span className="block font-bold text-navy-900 leading-snug group-hover:text-brand-600 transition-colors">
                             {user.fullName}
                           </span>
                           <span className="block text-xs font-mono text-slate-400">
@@ -471,7 +474,7 @@ export const UsersListPage: React.FC = () => {
                     {/* Action */}
                     <td className="py-4 px-4 sm:px-6 whitespace-nowrap text-right">
                       <button
-                        onClick={() => navigate(`/users/${user.username}`)}
+                        onClick={() => navigate(`/users/${user.id}`)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-brand-200/80 text-brand-600 hover:bg-brand-50 hover:border-brand-300 transition-colors focus-ring"
                       >
                         View Details
