@@ -338,10 +338,17 @@ export const handlers = [
     const top10 = [...sourceTransfers]
       .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
       .slice(0, 10)
-      .map((t) => ({
-        username: isAdminView && t.owner !== t.username ? `@${t.owner} → @${t.username}` : t.username,
-        amount: t.amount,
-      }));
+      .map((t) => {
+        const fromUser = usersStore.find((u) => u.username === t.owner);
+        const toUser = usersStore.find((u) => u.username === t.username);
+        const fromFullName = fromUser?.fullName || t.owner;
+        const toFullName = toUser?.fullName || t.username;
+        return {
+          username: isAdminView && t.owner !== t.username ? `@${t.owner} → @${t.username}` : t.username,
+          fullName: isAdminView && t.owner !== t.username ? `${fromFullName} → ${toFullName}` : toFullName,
+          amount: t.amount,
+        };
+      });
 
     return HttpResponse.json(top10, { status: 200 });
   }),
@@ -365,10 +372,14 @@ export const handlers = [
     }
 
     const topUsers = Array.from(outgoingMap.entries())
-      .map(([username, transacted_value]) => ({
-        username,
-        transacted_value,
-      }))
+      .map(([username, transacted_value]) => {
+        const found = usersStore.find((u) => u.username.toLowerCase() === username.toLowerCase());
+        return {
+          username,
+          fullName: found?.fullName || username,
+          transacted_value,
+        };
+      })
       .filter((u) => u.transacted_value > 0)
       .sort((a, b) => b.transacted_value - a.transacted_value)
       .slice(0, 10);

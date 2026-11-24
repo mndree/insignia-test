@@ -9,7 +9,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Card, CardContent } from '@/components/ui/Card';
 import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
 import { getTopUsersApi } from '@/services/api/endpoints';
-import { formatWalletUnits } from '@/utils/formatters';
+import { formatWalletUnits, getUserFullName } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
 import {
   Trophy,
@@ -73,8 +73,10 @@ export const TopUsersPage: React.FC = () => {
       let cmp = 0;
       if (sortField === 'rank') {
         cmp = a.originalRank - b.originalRank;
-      } else if (sortField === 'username') {
-        cmp = a.username.localeCompare(b.username);
+      } else if (sortField === 'username' || sortField === 'fullName' || sortField === 'name') {
+        const nameA = getUserFullName(a.username, a.fullName);
+        const nameB = getUserFullName(b.username, b.fullName);
+        cmp = nameA.localeCompare(nameB);
       } else if (sortField === 'transacted_value' || sortField === 'amount') {
         cmp = a.transacted_value - b.transacted_value;
       }
@@ -192,8 +194,8 @@ export const TopUsersPage: React.FC = () => {
                     className="w-20"
                   />
                   <TableColumnHeader
-                    label="Username"
-                    field="username"
+                    label="Full Name"
+                    field="fullName"
                     currentSortField={sortField}
                     currentSortOrder={sortOrder}
                     onSort={handleSort}
@@ -228,9 +230,14 @@ export const TopUsersPage: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-navy-900 font-mono">
-                            @{item.username}
-                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-navy-900">
+                              {getUserFullName(item.username, item.fullName)}
+                            </span>
+                            <span className="text-xs text-slate-400 font-mono">
+                              @{item.username}
+                            </span>
+                          </div>
                           {isCurrent && (
                             <Badge variant="default" size="sm">
                               <UserCheck className="w-3 h-3 text-brand-600" />

@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Card, CardContent } from '@/components/ui/Card';
 import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
 import { getTopTransactionsPerUserApi } from '@/services/api/endpoints';
-import { formatWalletUnits } from '@/utils/formatters';
+import { formatWalletUnits, formatRouteOrName } from '@/utils/formatters';
 import { normalizeApiError } from '@/services/api/client';
 import {
   TrendingUp,
@@ -71,8 +71,10 @@ export const TopTransactionsPage: React.FC = () => {
       let cmp = 0;
       if (sortField === 'rank') {
         cmp = a.originalRank - b.originalRank;
-      } else if (sortField === 'username') {
-        cmp = a.username.localeCompare(b.username);
+      } else if (sortField === 'username' || sortField === 'counterparty' || sortField === 'fullName') {
+        const displayA = formatRouteOrName(a.username, a.fullName).primary;
+        const displayB = formatRouteOrName(b.username, b.fullName).primary;
+        cmp = displayA.localeCompare(displayB);
       } else if (sortField === 'direction') {
         const dirA = a.amount > 0 ? 'incoming' : 'outgoing';
         const dirB = b.amount > 0 ? 'incoming' : 'outgoing';
@@ -166,7 +168,7 @@ export const TopTransactionsPage: React.FC = () => {
                   />
                   <TableColumnHeader
                     label="Counterparty"
-                    field="username"
+                    field="counterparty"
                     currentSortField={sortField}
                     currentSortOrder={sortOrder}
                     onSort={handleSort}
@@ -191,17 +193,23 @@ export const TopTransactionsPage: React.FC = () => {
               <tbody className="divide-y divide-slate-100 text-sm">
                 {sortedTransactions.map((item) => {
                   const isIncoming = item.amount > 0;
+                  const { primary, secondary } = formatRouteOrName(item.username, item.fullName);
                   return (
                     <tr key={`${item.username}-${item.originalRank}`} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-4 sm:px-6 font-semibold text-xs text-slate-400">
                         #{item.originalRank}
                       </td>
                       <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
-                        <span className="font-semibold text-navy-900 font-mono">
-                          {item.username.startsWith('@') || item.username.includes('→')
-                            ? item.username
-                            : `@${item.username}`}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-navy-900">
+                            {primary}
+                          </span>
+                          {secondary && (
+                            <span className="text-xs text-slate-400 font-mono">
+                              {secondary}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
                         {isIncoming ? (

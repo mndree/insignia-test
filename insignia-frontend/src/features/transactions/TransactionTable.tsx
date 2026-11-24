@@ -2,7 +2,7 @@ import React from 'react';
 import { TransactionRecordDto } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { TableColumnHeader, SortOrder } from '@/components/ui/TableColumnHeader';
-import { formatDateTime, formatWalletUnits } from '@/utils/formatters';
+import { formatDateTime, formatWalletUnits, getUserFullName } from '@/utils/formatters';
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Clock, Layers } from 'lucide-react';
 
 interface TransactionTableProps {
@@ -14,31 +14,8 @@ interface TransactionTableProps {
   onSort?: (field: string) => void;
 }
 
-const KNOWN_USER_FULL_NAMES: Record<string, string> = {
-  andre: 'Andre Juliansyah',
-  azra: 'Azra Putri',
-  raka: 'Raka Feisal',
-  alice: 'Alice Morgan',
-  bob: 'Bob Wilson',
-  charlie: 'Charlie Lee',
-  david: 'David Kim',
-  elena: 'Elena Rostova',
-  fiona: 'Fiona Gallagher',
-  george: 'George Clark',
-  admin: 'System Administrator',
-  system: 'System Top-up',
-};
-
 export function getCounterpartyFullName(username?: string, fallbackFullName?: string): string {
-  if (fallbackFullName && fallbackFullName.trim() && fallbackFullName.toLowerCase() !== username?.toLowerCase()) {
-    return fallbackFullName;
-  }
-  const clean = (username || '').toLowerCase().trim();
-  if (KNOWN_USER_FULL_NAMES[clean]) {
-    return KNOWN_USER_FULL_NAMES[clean];
-  }
-  if (!username) return 'Unknown User';
-  return username.charAt(0).toUpperCase() + username.slice(1);
+  return getUserFullName(username, fallbackFullName);
 }
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({

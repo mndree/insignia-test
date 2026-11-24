@@ -52,6 +52,7 @@ export interface TransferDto {
  */
 export interface TopTransactionItemDto {
   username: string;
+  fullName?: string;
   amount: number;
 }
 
@@ -61,6 +62,7 @@ export interface TopTransactionItemDto {
  */
 export interface TopUserItemDto {
   username: string;
+  fullName?: string;
   transacted_value: number;
 }
 

@@ -237,11 +237,15 @@ export class WalletService {
       const formatted = transfers.map((tx) => {
         const isOutgoing = tx.fromUserId === user.id;
         const counterparty = isOutgoing ? tx.toUser.username : tx.fromUser.username;
+        const counterpartyFullName = isOutgoing
+          ? (tx.toUser.fullName || tx.toUser.username)
+          : (tx.fromUser.fullName || tx.fromUser.username);
         const rawAmount = Number(tx.amount);
         const amount = isOutgoing ? -rawAmount : rawAmount;
 
         return {
           username: counterparty,
+          fullName: counterpartyFullName,
           amount,
           absAmount: Math.abs(amount),
           createdAt: tx.createdAt.getTime(),
@@ -255,8 +259,9 @@ export class WalletService {
         return b.createdAt - a.createdAt;
       });
 
-      return formatted.slice(0, 10).map(({ username, amount }) => ({
+      return formatted.slice(0, 10).map(({ username, fullName, amount }) => ({
         username,
+        fullName,
         amount,
       }));
     }
@@ -273,13 +278,18 @@ export class WalletService {
       take: 10,
     });
 
-    return transfers.map((tx) => ({
-      username: `@${tx.fromUser.username} → @${tx.toUser.username}`,
-      amount: -Number(tx.amount),
-    }));
+    return transfers.map((tx) => {
+      const fromName = tx.fromUser.fullName || tx.fromUser.username;
+      const toName = tx.toUser.fullName || tx.toUser.username;
+      return {
+        username: `@${tx.fromUser.username} → @${tx.toUser.username}`,
+        fullName: `${fromName} → ${toName}`,
+        amount: -Number(tx.amount),
+      };
+    });
   }
 
-  async getTopUsers(): Promise<Array<{ username: string; transacted_value: number }>> {
+  async getTopUsers(): Promise<Array<{ username: string; fullName?: string; transacted_value: number }>> {
     const groups = await prisma.transfer.groupBy({
       by: ['fromUserId'],
       _sum: {
@@ -306,12 +316,16 @@ export class WalletService {
       where: { id: { in: userIds } },
     });
 
-    const userMap = new Map(users.map((u) => [u.id, u.username]));
+    const userMap = new Map(users.map((u) => [u.id, u]));
 
-    return activeGroups.map((g) => ({
-      username: userMap.get(g.fromUserId) ?? 'unknown',
-      transacted_value: Number(g._sum.amount),
-    }));
+    return activeGroups.map((g) => {
+      const u = userMap.get(g.fromUserId);
+      return {
+        username: u?.username ?? 'unknown',
+        fullName: u?.fullName || u?.username || 'Unknown User',
+        transacted_value: Number(g._sum.amount),
+      };
+    });
   }
 
   async getTransactions(user: User, query: any) {

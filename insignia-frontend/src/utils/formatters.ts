@@ -69,3 +69,69 @@ export function formatShortDate(isoString: string): string {
     return isoString;
   }
 }
+
+/**
+ * Known user mappings for instant full name resolution across frontend
+ */
+export const KNOWN_USER_FULL_NAMES: Record<string, string> = {
+  andre: 'Andre Juliansyah',
+  azra: 'Azra Putri',
+  raka: 'Raka Feisal',
+  alice: 'Alice Morgan',
+  bob: 'Bob Wilson',
+  charlie: 'Charlie Lee',
+  david: 'David Kim',
+  elena: 'Elena Rostova',
+  fiona: 'Fiona Gallagher',
+  george: 'George Clark',
+  admin: 'System Administrator',
+  system: 'System Top-up',
+};
+
+/**
+ * Resolves full name from username or explicit fallback
+ */
+export function getUserFullName(username?: string, fallbackFullName?: string): string {
+  if (fallbackFullName && fallbackFullName.trim() && fallbackFullName.trim().toLowerCase() !== username?.trim().toLowerCase()) {
+    return fallbackFullName;
+  }
+  const clean = (username || '').toLowerCase().trim().replace(/^@/, '');
+  if (KNOWN_USER_FULL_NAMES[clean]) {
+    return KNOWN_USER_FULL_NAMES[clean];
+  }
+  if (!username) return 'Unknown User';
+  const raw = username.replace(/^@/, '');
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+/**
+ * Formats route or username to full names with handle subtitle
+ */
+export function formatRouteOrName(rawText?: string, explicitFullName?: string): { primary: string; secondary?: string } {
+  if (explicitFullName && explicitFullName.trim()) {
+    return {
+      primary: explicitFullName,
+      secondary: rawText && rawText !== explicitFullName ? rawText : undefined,
+    };
+  }
+
+  const text = (rawText || '').trim();
+  if (!text) return { primary: 'Unknown User' };
+
+  if (text.includes('→')) {
+    const parts = text.split('→').map((p) => p.trim());
+    const fromName = getUserFullName(parts[0]);
+    const toName = getUserFullName(parts[1]);
+    return {
+      primary: `${fromName} → ${toName}`,
+      secondary: text,
+    };
+  }
+
+  const singleName = getUserFullName(text);
+  const handle = text.startsWith('@') ? text : `@${text}`;
+  return {
+    primary: singleName,
+    secondary: handle,
+  };
+}
