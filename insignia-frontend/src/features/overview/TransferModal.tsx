@@ -31,8 +31,8 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const queryClient = useQueryClient();
 
   // Check role: admin vs regular user
-  const isUser = authUser?.role === 'USER';
-  const isAdmin = !isUser;
+  const isAdmin = authUser?.role === 'ADMIN' || authUser?.username === 'admin';
+  const isUser = !isAdmin;
 
   // Fetch all users for From and To Select2 dropdowns (strictly excluding admin)
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
@@ -55,43 +55,53 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Set intelligent defaults once users list loads (only regular users, never admin)
+  // Handle open/close and intelligent defaults
   useEffect(() => {
-    if (availableUsers.length > 0) {
-      let currentSender = fromUser;
-      if (!currentSender) {
-        currentSender = isUser && authUser
-          ? {
-            id: (authUser as any).id || (authUser as any).sub || authUser.username,
-            userCode: (authUser as any).userCode || 'USR-0001',
-            username: authUser.username,
-            fullName: authUser.fullName || authUser.username,
-            email: (authUser as any).email || `${authUser.username}@example.com`,
-            phone: '',
-            dateOfBirth: '',
-            address: '',
-            avatarUrl: (authUser as any).avatarUrl || null,
-            status: 'Active',
-            balance: initialCurrentBalance ?? 0,
-            createdAt: '',
-            lastLoginAt: '',
-          }
-          : availableUsers.find((u) => u.balance > 0) || availableUsers[0];
-        setFromUser(currentSender);
+    if (!isOpen) {
+      if (isAdmin) {
+        setFromUser(null);
+        setToUser(null);
       }
+      setIsReviewStep(false);
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      return;
+    }
 
-      if (!toUser && currentSender) {
-        const defaultRecipient = availableUsers.find(
-          (u) =>
-            u.id !== currentSender.id &&
-            u.username.toLowerCase() !== currentSender.username.toLowerCase()
-        );
-        if (defaultRecipient) {
-          setToUser(defaultRecipient);
-        }
+    if (isAdmin) {
+      // For Admin POV: Dropdowns MUST remain empty with no default values
+      setFromUser(null);
+      setToUser(null);
+    } else {
+      // For Regular User POV: Set authenticated user as sender and select a default recipient
+      setFromUser((prev) => {
+        if (prev) return prev;
+        return {
+          id: (authUser as any)?.id || (authUser as any)?.sub || authUser?.username || 'user-sender',
+          userCode: (authUser as any)?.userCode || 'USR-0001',
+          username: authUser?.username || 'user',
+          fullName: authUser?.fullName || authUser?.username || 'User',
+          email: (authUser as any)?.email || `${authUser?.username || 'user'}@example.com`,
+          phone: '',
+          dateOfBirth: '',
+          address: '',
+          avatarUrl: (authUser as any)?.avatarUrl || null,
+          status: 'Active',
+          balance: initialCurrentBalance ?? 0,
+          createdAt: '',
+          lastLoginAt: '',
+        };
+      });
+
+      if (availableUsers.length > 0) {
+        setToUser((prev) => {
+          if (prev) return prev;
+          const currentUsername = authUser?.username?.toLowerCase() || 'user';
+          return availableUsers.find((u) => u.username.toLowerCase() !== currentUsername) || null;
+        });
       }
     }
-  }, [availableUsers, fromUser, toUser, isUser, authUser, initialCurrentBalance]);
+  }, [isOpen, isAdmin, authUser, availableUsers, initialCurrentBalance]);
 
   // Keep sender balance updated
   const senderBalance = fromUser ? fromUser.balance : (initialCurrentBalance ?? 0);
@@ -162,12 +172,16 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     setSuccessMessage(null);
 
     if (!fromUser) {
-      setErrorMessage('Please select a sender (From User).');
+      const msg = 'Please select a sender (From User).';
+      setErrorMessage(msg);
+      showErrorAlert('Incomplete Form', msg);
       return;
     }
 
     if (!toUser) {
-      setErrorMessage('Please select a recipient (To User).');
+      const msg = 'Please select a recipient (To User).';
+      setErrorMessage(msg);
+      showErrorAlert('Incomplete Form', msg);
       return;
     }
 
@@ -377,7 +391,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
               <span>Available Balance:</span>
             </div>
             <span className="font-extrabold text-navy-900 font-mono text-sm">
-              {formatWalletUnits(senderBalance)}
+              {fromUser ? formatWalletUnits(senderBalance) : (isAdmin ? '—' : formatWalletUnits(senderBalance))}
             </span>
           </div>
 
