@@ -757,6 +757,7 @@ export const handlers = [
           amount,
           userBalanceAfter: user.balance,
           createdBy: 'admin',
+          attachment: body.attachment || null,
         },
         { status: 200 }
       );

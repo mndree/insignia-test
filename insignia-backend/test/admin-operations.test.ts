@@ -68,15 +68,31 @@ describe('Admin Operations & Profile Management', () => {
       .send({
         amount: 3500,
         notes: 'Admin credit grant',
+        attachment: 'data:image/jpeg;base64,sample_test_attachment',
       });
 
     expect(res.status).toBe(200);
     expect(res.body.amount).toBe(3500);
+    expect(res.body.topupCode).toMatch(/^TOP-/);
+    expect(res.body.attachment).toBe('data:image/jpeg;base64,sample_test_attachment');
 
     const userRes = await request(app)
       .get(`/admin/users/${testUserId}`)
       .set('Authorization', adminToken);
     expect(userRes.body.balance).toBe(3500);
+  });
+
+  it('POST /admin/users/:id/topup rejects request without mandatory attachment', async () => {
+    const res = await request(app)
+      .post(`/admin/users/${testUserId}/topup`)
+      .set('Authorization', adminToken)
+      .send({
+        amount: 1000,
+        notes: 'Missing attachment test',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/attachment is required/i);
   });
 
   it('POST /admin/users/:id/transfer executes admin-directed user transfer', async () => {

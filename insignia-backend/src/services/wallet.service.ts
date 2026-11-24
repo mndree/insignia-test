@@ -96,10 +96,14 @@ export class WalletService {
     return { token };
   }
 
-  async topup(user: User, dto: { amount?: number | string; notes?: string }, createdBy: string = 'admin'): Promise<void> {
+  async topup(user: User, dto: { amount?: number | string; notes?: string; attachment?: string }, createdBy: string = 'admin'): Promise<void> {
     const numAmount = Number(dto.amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       throw new BadRequestException('Topup amount must be greater than 0');
+    }
+
+    if (!dto.attachment || !dto.attachment.trim()) {
+      throw new BadRequestException('Attachment is required');
     }
 
     const decimalAmount = new Prisma.Decimal(numAmount);
@@ -122,6 +126,7 @@ export class WalletService {
           userId: user.id,
           amount: decimalAmount,
           notes: dto.notes?.trim() || null,
+          attachment: dto.attachment?.trim() || null,
           createdBy,
         },
       });
@@ -345,6 +350,7 @@ export class WalletService {
         amount: Number(top.amount),
         created_at: top.createdAt.toISOString(),
         description: top.notes || 'Direct wallet balance top-up',
+        attachment: top.attachment || null,
       });
     }
 

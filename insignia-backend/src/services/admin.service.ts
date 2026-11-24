@@ -492,7 +492,7 @@ export class AdminService {
 
   async topupUserBalance(
     userId: string,
-    dto: { amount?: number | string; notes?: string },
+    dto: { amount?: number | string; notes?: string; attachment?: string },
     adminUsername: string = 'admin'
   ) {
     const user = await prisma.user.findFirst({
@@ -510,6 +510,10 @@ export class AdminService {
       throw new BadRequestException('Top up amount must be greater than 0');
     }
 
+    if (!dto.attachment || !dto.attachment.trim()) {
+      throw new BadRequestException('Attachment is required');
+    }
+
     const topupCount = await prisma.topup.count();
     const topupCode = `TOP-${1001 + topupCount}`;
 
@@ -520,6 +524,7 @@ export class AdminService {
           userId: user.id,
           amount,
           notes: dto.notes?.trim() || null,
+          attachment: dto.attachment?.trim() || null,
           createdBy: adminUsername,
         },
       }),
@@ -535,6 +540,7 @@ export class AdminService {
       amount,
       userBalanceAfter: Number(updatedUser.balance),
       createdBy: topup.createdBy,
+      attachment: topup.attachment,
     };
   }
 

@@ -89,7 +89,7 @@ describe('Balance, Top Up & Transfer Operations', () => {
     const res = await request(app)
       .post(`/admin/users/${senderUserId}/topup`)
       .set('Authorization', adminToken)
-      .send({ amount: 5000, notes: 'Initial test funding' });
+      .send({ amount: 5000, notes: 'Initial test funding', attachment: 'data:image/jpeg;base64,sample_test_attachment' });
 
     expect(res.status).toBe(200);
     expect(res.body.amount).toBe(5000);

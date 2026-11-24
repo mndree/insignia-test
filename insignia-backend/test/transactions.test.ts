@@ -43,7 +43,7 @@ describe('Transaction History & Counterparty Analytics', () => {
     await request(app)
       .post(`/admin/users/${senderUser!.id}/topup`)
       .set('Authorization', adminToken)
-      .send({ amount: 5000 });
+      .send({ amount: 5000, attachment: 'data:image/jpeg;base64,sample_test_attachment' });
 
     await request(app)
       .post('/transfer')

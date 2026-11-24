@@ -38,6 +38,7 @@ export interface BalanceResponseDto {
 
 export interface TopupDto {
   amount: number;
+  attachment?: string;
 }
 
 export interface TransferDto {
@@ -242,6 +243,7 @@ export interface AdminTransferRequestDto {
 export interface AdminTopupRequestDto {
   amount: number;
   notes?: string;
+  attachment?: string;
 }
 
 export interface AdminTopupResponseDto {
@@ -250,6 +252,7 @@ export interface AdminTopupResponseDto {
   amount: number;
   userBalanceAfter: number;
   createdBy?: string;
+  attachment?: string | null;
 }
 
 // ==========================================

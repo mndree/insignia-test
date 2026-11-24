@@ -10,7 +10,7 @@ import { formatNumber } from '@/utils/formatters';
 import { formatAmountInput, parseAmountInput } from '@/utils/masking';
 import { normalizeApiError } from '@/services/api/client';
 import { showSuccessAlert, showErrorAlert } from '@/utils/sweetalert';
-import { X, CheckCircle2, PlusCircle, Wallet, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle2, PlusCircle, Wallet, ShieldCheck, UploadCloud, Trash2 } from 'lucide-react';
 
 interface AdminTopupModalProps {
   isOpen: boolean;
@@ -29,6 +29,10 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
 
   const [amountInput, setAmountInput] = useState<string>('1,000');
   const [notes, setNotes] = useState<string>('Admin credit adjustment');
+  const [attachment, setAttachment] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string>('');
+  const [attachmentSize, setAttachmentSize] = useState<string>('');
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -87,6 +91,40 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('Attachment file size must be less than 5MB');
+      showErrorAlert('File Too Large', 'Attachment file size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setAttachment(result);
+      setAttachmentName(file.name);
+      setAttachmentSize((file.size / 1024).toFixed(1) + ' KB');
+      setErrorMessage(null);
+    };
+    reader.onerror = () => {
+      setErrorMessage('Failed to read file');
+      showErrorAlert('File Read Error', 'Failed to read attachment file');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAttachment = () => {
+    setAttachment(null);
+    setAttachmentName('');
+    setAttachmentSize('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -97,9 +135,16 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
       return;
     }
 
+    if (!attachment) {
+      setErrorMessage('Proof of payment / receipt attachment is required.');
+      showErrorAlert('Attachment Required', 'Please attach proof of payment / transaction receipt before submitting.');
+      return;
+    }
+
     mutation.mutate({
       amount: numericAmount,
       notes: notes.trim() || undefined,
+      attachment,
     });
   };
 
@@ -107,6 +152,12 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
     if (!mutation.isPending) {
       setErrorMessage(null);
       setSuccessMessage(null);
+      setAttachment(null);
+      setAttachmentName('');
+      setAttachmentSize('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       onClose();
     }
   };
@@ -256,6 +307,86 @@ export const AdminTopupModal: React.FC<AdminTopupModalProps> = ({
               disabled={mutation.isPending}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-navy-900 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             />
+          </div>
+
+          {/* Attachment Field (Mandatory / Required) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="topup-attachment" className="block text-xs font-bold uppercase tracking-wider text-navy-700">
+                Attachment (Proof of Receipt) <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[11px] text-rose-500 font-semibold">Mandatory</span>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              id="topup-attachment"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={mutation.isPending}
+            />
+
+            {!attachment ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="group border-2 border-dashed border-slate-300 hover:border-brand-500 bg-slate-50/60 hover:bg-brand-50/30 rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-colors"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+              >
+                <div className="w-9 h-9 rounded-full bg-slate-100 group-hover:bg-brand-100 text-slate-500 group-hover:text-brand-600 flex items-center justify-center transition-colors mb-1.5">
+                  <UploadCloud className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-semibold text-navy-800">
+                  <span className="text-brand-600 underline">Click to upload</span> receipt attachment
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  JPG, PNG, WEBP up to 5MB (Required)
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/80">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <img
+                    src={attachment}
+                    alt="Receipt preview"
+                    className="w-12 h-12 object-cover rounded-lg border border-slate-200 shadow-xs shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-navy-900 truncate">
+                      {attachmentName || 'receipt-attachment.jpg'}
+                    </p>
+                    <p className="text-[11px] text-slate-500">{attachmentSize}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={mutation.isPending}
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-700 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition-colors"
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveAttachment}
+                    disabled={mutation.isPending}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                    aria-label="Remove attachment"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Calculation Summary Box */}

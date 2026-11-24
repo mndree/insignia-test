@@ -51,14 +51,15 @@ model User {
 }
 
 model Topup {
-  id        String   @id @default(uuid())
-  topupCode String?  @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount    Decimal  @db.Decimal(18, 2)
-  notes     String?
-  createdBy String?  @default("admin")
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  id         String   @id @default(uuid())
+  topupCode  String?  @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount     Decimal  @db.Decimal(18, 2)
+  notes      String?
+  attachment String?
+  createdBy  String?  @default("admin")
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([userId])
   @@map("topups")

@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import receiptData from './receiptBase64.json';
 
 const prisma = new PrismaClient();
 
@@ -210,6 +211,7 @@ async function main() {
           userId: user.id,
           amount: t.amount,
           notes: t.notes,
+          attachment: receiptData.receiptBase64,
           createdBy: 'admin',
           createdAt: new Date(t.date),
         },
