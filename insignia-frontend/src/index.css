@@ -13,7 +13,12 @@
   @apply focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2;
 }
 
-/* Custom scrollbar for data tables */
+/* Prevent height auto collapsing or layout shift from alerts/modals */
+html.swal2-height-auto,
+body.swal2-height-auto {
+  height: 100% !important;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   height: 6px;
   width: 6px;
